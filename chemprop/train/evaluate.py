@@ -86,14 +86,18 @@ def evaluate(model: nn.Module,
     :param logger: Logger.
     :return: A list with the score for each task based on `metric_func`.
     """
+    
+    # make predictions on dataset
     preds = predict(
         model=model,
         data_loader=data_loader,
         scaler=scaler
     )
 
+    # generate a list of lists of floats containing the targets
     targets = data_loader.targets()
 
+    # returns list with the score for each task based on `metric_func`
     results = evaluate_predictions(
         preds=preds,
         targets=targets,

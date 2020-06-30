@@ -41,15 +41,25 @@ def train(model: nn.Module,
     model.train()
     loss_sum, iter_count = 0, 0
 
-    for batch in tqdm(data_loader, total=len(data_loader)):
+    #for batch in tqdm(data_loader, total=len(data_loader)):
+    for batch in data_loader:
         # Prepare batch
         batch: MoleculeDataset
+        
+        # .batch_graph() returns BatchMolGraph
+        # .features() returns None if no additional features
+        # .targets() returns list of lists of floats containing the targets
         mol_batch, features_batch, target_batch = batch.batch_graph(), batch.features(), batch.targets()
+        
+        # mask is 1 where targets are not None
         mask = torch.Tensor([[x is not None for x in tb] for tb in target_batch])
+        # where targets are None, replace with 0
         targets = torch.Tensor([[0 if x is None else x for x in tb] for tb in target_batch])
 
-        # Run model
+        # zero gradients
         model.zero_grad()
+        
+        # forward pass
         preds = model(mol_batch, features_batch)
 
         # Move tensors to correct device
@@ -62,17 +72,23 @@ def train(model: nn.Module,
             loss = torch.cat([loss_func(preds[:, target_index, :], targets[:, target_index]).unsqueeze(1) for target_index in range(preds.size(1))], dim=1) * class_weights * mask
         else:
             loss = loss_func(preds, targets) * class_weights * mask
+        
+        # compute average loss per molecule per task
         loss = loss.sum() / mask.sum()
 
+        # add to loss_sum and iter_count
         loss_sum += loss.item()
         iter_count += len(batch)
 
+        # backward pass; update weights
         loss.backward()
         optimizer.step()
 
+        # update learning rate by taking a step
         if isinstance(scheduler, NoamLR):
             scheduler.step()
 
+        # increment n_iter (total number of examples across epochs)
         n_iter += len(batch)
 
         # Log and/or add to tensorboard
