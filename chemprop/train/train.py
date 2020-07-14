@@ -21,7 +21,8 @@ def train(model: nn.Module,
           args: TrainArgs,
           n_iter: int = 0,
           logger: logging.Logger = None,
-          writer: SummaryWriter = None) -> int:
+          writer: SummaryWriter = None,
+          swag_model: nn.Module = None) -> int:
     """
     Trains a model for an epoch.
 
@@ -34,6 +35,7 @@ def train(model: nn.Module,
     :param n_iter: The number of iterations (training examples) trained on so far.
     :param logger: A logger for printing intermediate results.
     :param writer: A tensorboardX SummaryWriter.
+    :param swag_model: SWAG model containing stored moments and deviations
     :return: The total number of iterations (training examples) trained on so far.
     """
     debug = logger.debug if logger is not None else print
@@ -108,5 +110,13 @@ def train(model: nn.Module,
                 writer.add_scalar('gradient_norm', gnorm, n_iter)
                 for i, lr in enumerate(lrs):
                     writer.add_scalar(f'learning_rate_{i}', lr, n_iter)
+        
+        # SWAG update
+        if (swag_model is not None) and ((n_iter // args.batch_size) % args.c_swag == 0):
+            swag_model.collect_model(model)
+
 
     return n_iter
+
+
+
