@@ -114,6 +114,31 @@ class CommonArgs(Tap):
 class TrainArgs(CommonArgs):
     """TrainArgs includes CommonArgs along with additional arguments used for training a chemprop model."""
 
+    ### chempropBayes argument additions
+    
+    samples: int = 1 # number of Bayesian samples
+    
+    
+    # MC-dropout
+    test_dropout: bool = False # True means dropout is enabled during prediction
+    
+    
+    # SWAG
+    swag: bool = False # SWAG switch
+    cov_mat: bool = False # whether to compute deviations and then covariance
+    max_num_models: float = 0 # max number of columns of deviations matrix
+    block: bool = True # whether to compute covariances layer by layer
+    
+    epochs_swag: int = 0 # number of epochs
+    c_swag: int = 0 # how frequently to collect a model (in batches)
+    
+    lr_swag: float = 1e-4
+    momentum_swag: float = 0.9
+    wd_swag: float = 0
+    
+    
+    
+    
     # General arguments
     data_path: str  # Path to data CSV file
     target_columns: List[str] = None  # Name of the columns containing target values. By default, uses all columns except the SMILES column.

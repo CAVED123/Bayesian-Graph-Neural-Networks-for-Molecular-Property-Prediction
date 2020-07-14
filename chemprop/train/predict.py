@@ -4,24 +4,35 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 
+from chemprop.args import TrainArgs
 from chemprop.data import MoleculeDataLoader, MoleculeDataset, StandardScaler
-
+from chemprop.bayes_utils import enable_dropout
 
 def predict(model: nn.Module,
             data_loader: MoleculeDataLoader,
+            args: TrainArgs,
             disable_progress_bar: bool = False,
-            scaler: StandardScaler = None) -> List[List[float]]:
+            scaler: StandardScaler = None,
+            test_data: bool = False) -> List[List[float]]:
     """
     Makes predictions on a dataset using an ensemble of models.
 
     :param model: A model.
     :param data_loader: A MoleculeDataLoader.
+    :param args: Arguments.
     :param disable_progress_bar: Whether to disable the progress bar.
     :param scaler: A StandardScaler object fit on the training targets.
+    :param test_data: Flag indicating whether data is test data.
     :return: A list of lists of predictions. The outer list is examples
     while the inner list is tasks.
     """
+    
+    # set model to eval mode
     model.eval()
+    
+    # enable dropout layers with test data, if args.test_dropout == True
+    if args.test_dropout and test_data:
+        model.apply(enable_dropout)
 
     preds = []
 
