@@ -14,6 +14,8 @@ from torch.optim.lr_scheduler import ExponentialLR
 from .evaluate import evaluate, evaluate_predictions
 from .predict import predict
 from .train import train
+from .swag_tr import train_swag
+from .sgld_tr import train_sgld
 from chemprop.args import TrainArgs
 from chemprop.data import StandardScaler, MoleculeDataLoader
 from chemprop.data.utils import get_class_sizes, get_data, get_task_names, split_data
@@ -21,7 +23,7 @@ from chemprop.models import MoleculeModel
 from chemprop.nn_utils import param_count
 from chemprop.utils import build_optimizer, build_lr_scheduler, get_loss_func, get_metric_func, load_checkpoint,\
     makedirs, save_checkpoint, save_smiles_splits
-from chemprop.bayes import train_swag
+
 
 
 def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
@@ -184,6 +186,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
         if args.cuda:
             debug('Moving model to cuda')
         model = model.to(args.device)
+        
 
         # Ensure that model is saved in correct location for evaluation if 0 epochs
         save_checkpoint(os.path.join(save_dir, 'model.pt'), model, scaler, features_scaler, args)
@@ -249,9 +252,34 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
         
         # SWAG training loop, returns swag_model
         if args.swag:
-            model = train_swag(model, train_data_loader, loss_func, args)
-            ##### question to brooks SHOULD WE COMBINE TRAIN AND VAL DATA LOADERS HERE?
-
+            model = train_swag(
+                model,
+                train_data_loader,
+                val_data_loader,
+                loss_func,
+                metric_func,
+                args,
+                scaler)
+        
+        # SGLD loop, which saves nets
+        if args.sgld:
+            save_dir_sgld = os.path.join(save_dir, 'SGLD_models')
+            makedirs(save_dir_sgld)
+            model = train_sgld(
+                model,
+                train_data,
+                val_data,
+                num_workers,
+                cache,
+                metric_func,
+                scaler,
+                features_scaler,
+                args,
+                save_dir_sgld)
+            
+            
+            
+            
         
         
         ##################################
@@ -264,6 +292,11 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
             if args.swag:
                 model.sample(scale=1.0, cov=args.cov_mat, block=args.block)
             
+            # draw model from collected SGLD models
+            if args.sgld:
+                model = load_checkpoint(os.path.join(save_dir_sgld, f'model_{sample_idx}.pt'), device=args.device, logger=logger)
+                
+                
             # make predictions
             test_preds = predict(
                 model=model,

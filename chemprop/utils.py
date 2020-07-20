@@ -17,6 +17,8 @@ from chemprop.args import TrainArgs
 from chemprop.data import StandardScaler, MoleculeDataset
 from chemprop.models import MoleculeModel
 from chemprop.nn_utils import NoamLR
+from chemprop.bayes import SGLD
+from chemprop.bayes_utils import scheduler_const
 
 
 def makedirs(path: str, isfile: bool = False):
@@ -108,7 +110,7 @@ def load_checkpoint(path: str,
                  f'of shape {loaded_state_dict[param_name].shape} does not match corresponding '
                  f'model parameter of shape {model_state_dict[param_name].shape}.')
         else:
-            debug(f'Loading pretrained parameter "{param_name}".')
+            #debug(f'Loading pretrained parameter "{param_name}".')
             pretrained_state_dict[param_name] = loaded_state_dict[param_name]
 
     # Load pretrained weights
@@ -276,7 +278,6 @@ def build_optimizer(model: nn.Module, args: TrainArgs) -> Optimizer:
     :return: An initialized Optimizer.
     """
     params = [{'params': model.parameters(), 'lr': args.init_lr, 'weight_decay': 0}]
-
     return Adam(params)
 
 
@@ -289,7 +290,7 @@ def build_lr_scheduler(optimizer: Optimizer, args: TrainArgs, total_epochs: List
     :param total_epochs: The total number of epochs for which the model will be run.
     :return: An initialized learning rate scheduler.
     """
-    # Learning rate scheduler
+    # Learning rate scheduler 
     return NoamLR(
         optimizer=optimizer,
         warmup_epochs=[args.warmup_epochs],
