@@ -9,7 +9,7 @@ from chemprop.utils import save_checkpoint
 from chemprop.data import MoleculeDataLoader
 
 from chemprop.bayes import loss_sgld
-from chemprop.bayes import SGLD
+from chemprop.bayes import SGLD, pSGLD
 from chemprop.bayes_utils import scheduler_const
 
 
@@ -50,7 +50,10 @@ def train_sgld(
     params = [{'params': model.encoder.parameters()},
               {'params': model.ffn.parameters()},
               {'params': model.log_noise, 'addnoise': False}]
-    optimizer = SGLD(params, args, lr=args.lr_sgld, norm_sigma=args.norm_sigma_sgld, addnoise=True)
+    if args.RMS:
+        optimizer = pSGLD(params, args, lr=args.lr_sgld, norm_sigma=args.norm_sigma_sgld, addnoise=True)
+    else:
+        optimizer = SGLD(params, args, lr=args.lr_sgld, norm_sigma=args.norm_sigma_sgld, addnoise=True)
     
     # instantiate scheduler
     scheduler = scheduler_const(args.lr_sgld)
