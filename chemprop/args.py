@@ -114,14 +114,13 @@ class CommonArgs(Tap):
 class TrainArgs(CommonArgs):
     """TrainArgs includes CommonArgs along with additional arguments used for training a chemprop model."""
 
-    ### chempropBayes argument additions
+    ### chempropBayes arguments
     
+    ensemble_size: int = 1  # Number of models in ensemble
     samples: int = 1 # number of Bayesian samples
-    
-    
-    # MC-dropout
     test_dropout: bool = False # True means dropout is enabled during prediction
     
+    # GP
     
     # SWAG
     swag: bool = False # SWAG switch
@@ -137,6 +136,24 @@ class TrainArgs(CommonArgs):
     wd_swag: float = 0
     
     
+    # SGLD
+    sgld: bool = False
+    
+    init_log_noise: float = 0 # initial estimate of log sigma for learned parameter
+    lr_sgld: float = 1e-3 # learning rate
+    norm_sigma_sgld: float = 100 # sigma for Gaussian prior = 1 / sqrt(weight_decay)
+    
+    batch_size_sgld: int = 50 # sgld batch size
+    log_frequency_sgld: int = 0 # reporting frequency for sgld
+    
+    burnin_epochs: int = 10
+    mix_epochs: int = 1
+    
+    
+    
+    
+    
+    # Mean field
     
     
     # General arguments
@@ -179,7 +196,6 @@ class TrainArgs(CommonArgs):
     separate_val_features_path: List[str] = None  # Path to file with features for separate val set
     separate_test_features_path: List[str] = None  # Path to file with features for separate test set
     config_path: str = None  # Path to a .json file containing arguments. Any arguments present in the config file will override arguments specified via the command line or by the defaults.
-    ensemble_size: int = 1  # Number of models in ensemble
 
     # Training arguments
     epochs: int = 30  # Number of epochs to run

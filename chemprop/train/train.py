@@ -22,7 +22,8 @@ def train(model: nn.Module,
           n_iter: int = 0,
           logger: logging.Logger = None,
           writer: SummaryWriter = None,
-          swag_model: nn.Module = None) -> int:
+          swag_model: nn.Module = None,
+          sgld_switch: bool = False) -> int:
     """
     Trains a model for an epoch.
 
@@ -69,22 +70,26 @@ def train(model: nn.Module,
         targets = targets.to(preds.device)
         class_weights = torch.ones(targets.shape, device=preds.device)
 
-        if args.dataset_type == 'multiclass':
-            targets = targets.long()
-            loss = torch.cat([loss_func(preds[:, target_index, :], targets[:, target_index]).unsqueeze(1) for target_index in range(preds.size(1))], dim=1) * class_weights * mask
-        else:
-            loss = loss_func(preds, targets) * class_weights * mask
-        
-        # compute average loss per molecule per task
-        loss = loss.sum() / mask.sum()
 
-        # add to loss_sum and iter_count
-        loss_sum += loss.item()
-        iter_count += len(batch)
+        ### compute loss
+        if sgld_switch:
+            loss = loss_func(preds, targets, torch.exp(model.log_noise))
+        else:
+            if args.dataset_type == 'multiclass':
+                targets = targets.long()
+                loss = torch.cat([loss_func(preds[:, target_index, :], targets[:, target_index]).unsqueeze(1) for target_index in range(preds.size(1))], dim=1) * class_weights * mask
+            else:
+                loss = loss_func(preds, targets) * class_weights * mask
+            loss = loss.sum() / mask.sum() # average per molecule per task   
+        
 
         # backward pass; update weights
         loss.backward()
         optimizer.step()
+
+        # add to loss_sum and iter_count
+        loss_sum += loss.item()
+        iter_count += len(batch)
 
         # update learning rate by taking a step
         if isinstance(scheduler, NoamLR):
@@ -92,12 +97,17 @@ def train(model: nn.Module,
 
         # increment n_iter (total number of examples across epochs)
         n_iter += len(batch)
+        
+        # determine reporting frequency
+        log_frequency = args.log_frequency_sgld if sgld_switch else args.log_frequency
 
         # Log and/or add to tensorboard
-        if (n_iter // args.batch_size) % args.log_frequency == 0:
+        if (n_iter // args.batch_size) % log_frequency == 0:
             lrs = scheduler.get_lr()
             pnorm = compute_pnorm(model)
             gnorm = compute_gnorm(model)
+            
+            ### they seem to report something funny here... check it out?
             loss_avg = loss_sum / iter_count
             loss_sum, iter_count = 0, 0
 
@@ -115,8 +125,19 @@ def train(model: nn.Module,
         if (swag_model is not None) and ((n_iter // args.batch_size) % args.c_swag == 0):
             swag_model.collect_model(model)
 
-
     return n_iter
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
