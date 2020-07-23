@@ -74,8 +74,8 @@ class SWAG(torch.nn.Module):
             )
         )
         
+
     
-    ### NOT SURE WHAT THIS IS FOR? DO CLASSES HAVE TO HAVE A FORWARD?
     def forward(self, *input):
         return self.base(*input)
 

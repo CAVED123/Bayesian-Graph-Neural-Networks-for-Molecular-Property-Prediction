@@ -34,6 +34,7 @@ class MPNEncoder(nn.Module):
         self.features_only = args.features_only
         self.use_input_features = args.use_input_features
         self.device = args.device
+        self.dropout_FFNonly = args.dropout_FFNonly
 
         if self.features_only:
             return
@@ -110,14 +111,16 @@ class MPNEncoder(nn.Module):
 
             message = self.W_h(message)
             message = self.act_func(input + message)  # num_bonds x hidden_size
-            message = self.dropout_layer(message)  # num_bonds x hidden
+            if not self.dropout_FFNonly:
+                message = self.dropout_layer(message)  # num_bonds x hidden
 
         a2x = a2a if self.atom_messages else a2b
         nei_a_message = index_select_ND(message, a2x)  # num_atoms x max_num_bonds x hidden
         a_message = nei_a_message.sum(dim=1)  # num_atoms x hidden
         a_input = torch.cat([f_atoms, a_message], dim=1)  # num_atoms x (atom_fdim + hidden)
         atom_hiddens = self.act_func(self.W_o(a_input))  # num_atoms x hidden
-        atom_hiddens = self.dropout_layer(atom_hiddens)  # num_atoms x hidden
+        if not self.dropout_FFNonly:
+            atom_hiddens = self.dropout_layer(atom_hiddens)  # num_atoms x hidden
 
         # Readout
         mol_vecs = []

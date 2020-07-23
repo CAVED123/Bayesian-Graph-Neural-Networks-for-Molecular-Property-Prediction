@@ -99,10 +99,11 @@ def train(model: nn.Module,
         n_iter += len(batch)
         
         # determine reporting frequency
+        batch_size = args.batch_size_sgld if sgld_switch else args.batch_size
         log_frequency = args.log_frequency_sgld if sgld_switch else args.log_frequency
 
         # Log and/or add to tensorboard
-        if (n_iter // args.batch_size) % log_frequency == 0:
+        if (n_iter // batch_size) % log_frequency == 0:
             lrs = scheduler.get_lr()
             pnorm = compute_pnorm(model)
             gnorm = compute_gnorm(model)

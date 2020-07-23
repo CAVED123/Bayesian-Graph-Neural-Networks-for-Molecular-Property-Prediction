@@ -118,30 +118,34 @@ class TrainArgs(CommonArgs):
     
     ensemble_size: int = 1  # Number of models in ensemble
     samples: int = 1 # number of Bayesian samples
+    
+    dropout: float = 0.0  # Dropout probability
     test_dropout: bool = False # True means dropout is enabled during prediction
+    dropout_FFNonly: bool = False # switch if we want to dropout FFN only
     
     # GP
     
     # SWAG
     swag: bool = False # SWAG switch
     cov_mat: bool = False # whether to compute deviations and then covariance
-    max_num_models: float = 0 # max number of columns of deviations matrix
     block: bool = True # whether to compute covariances layer by layer
+    max_num_models: float = 0 # max number of columns of deviations matrix
     
     epochs_swag: int = 0 # number of epochs
     c_swag: int = 0 # how frequently to collect a model (in batches)
     
     lr_swag: float = 1e-4
-    momentum_swag: float = 0.9
     wd_swag: float = 0
+    momentum_swag: float = 0.9
+    
     
     
     # SGLD
-    sgld: bool = False
+    sgld: bool = False # switch for SGLD
+    init_log_noise: float = -2 # initial estimate of log sigma for learned parameter
     
-    init_log_noise: float = 0 # initial estimate of log sigma for learned parameter
-    lr_sgld: float = 1e-3 # learning rate
-    norm_sigma_sgld: float = 100 # sigma for Gaussian prior = 1 / sqrt(weight_decay)
+    lr_sgld: float = 1e-4 # learning rate
+    weight_decay_sgld: float = 0
     
     batch_size_sgld: int = 50 # sgld batch size
     log_frequency_sgld: int = 0 # reporting frequency for sgld
@@ -152,8 +156,7 @@ class TrainArgs(CommonArgs):
     
     
     
-    
-    # Mean field
+    # BBP
     
     
     # General arguments
@@ -186,7 +189,6 @@ class TrainArgs(CommonArgs):
     bias: bool = False  # Whether to add bias to linear layers
     hidden_size: int = 300  # Dimensionality of hidden layers in MPN
     depth: int = 3  # Number of message passing steps
-    dropout: float = 0.0  # Dropout probability
     activation: Literal['ReLU', 'LeakyReLU', 'PReLU', 'tanh', 'SELU', 'ELU'] = 'ReLU'  # Activation function
     atom_messages: bool = False  # Centers messages on atoms instead of on bonds
     undirected: bool = False  # Undirected edges (always sum the two relevant bond vectors)
