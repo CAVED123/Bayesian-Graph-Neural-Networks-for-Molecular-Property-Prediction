@@ -121,9 +121,8 @@ class TrainArgs(CommonArgs):
     
     dropout: float = 0.0  # Dropout probability
     test_dropout: bool = False # True means dropout is enabled during prediction
-    dropout_FFNonly: bool = False # switch if we want to dropout FFN only
+    dropout_FFNonly: bool = False # switch if we want to dropout FFN only    
     
-    # GP
     
     # SWAG
     swag: bool = False # SWAG switch
@@ -153,10 +152,27 @@ class TrainArgs(CommonArgs):
     burnin_epochs: int = 10
     mix_epochs: int = 1
     
+
+        
+    # GP
+    gp: bool = False
+    num_inducing_points: int = 2000
+    
+    batch_size_gp: int = 100
+    log_frequency_gp: int = 100
+    
+    epochs_gp: int = 100
+    warmup_epochs_gp: int = 4
+    unfreeze_epoch_gp: int = 50 # unfreeze featurizer weights after this many epochs
+    
+    init_lr_gp: float = 1e-4
+    max_lr_gp: float = 1e-3
+    final_lr_gp: float = 1e-4
     
     
     
     # BBP
+
     
     
     # General arguments

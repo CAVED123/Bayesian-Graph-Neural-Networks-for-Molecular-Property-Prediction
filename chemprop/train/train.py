@@ -23,7 +23,9 @@ def train(model: nn.Module,
           logger: logging.Logger = None,
           writer: SummaryWriter = None,
           swag_model: nn.Module = None,
-          sgld_switch: bool = False) -> int:
+          sgld_switch: bool = False,
+          gp_switch: bool = False,
+          likelihood = None) -> int:
     """
     Trains a model for an epoch.
 
@@ -42,6 +44,8 @@ def train(model: nn.Module,
     debug = logger.debug if logger is not None else print
     
     model.train()
+    if likelihood is not None:
+        likelihood.train()
     loss_sum, iter_count = 0, 0
 
     #for batch in tqdm(data_loader, total=len(data_loader)):
@@ -61,18 +65,21 @@ def train(model: nn.Module,
 
         # zero gradients
         model.zero_grad()
+        optimizer.zero_grad()
         
         # forward pass
         preds = model(mol_batch, features_batch)
 
         # Move tensors to correct device
-        mask = mask.to(preds.device)
-        targets = targets.to(preds.device)
-        class_weights = torch.ones(targets.shape, device=preds.device)
+        mask = mask.to(args.device)
+        targets = targets.to(args.device)
+        class_weights = torch.ones(targets.shape, device=args.device)
 
 
         ### compute loss
-        if sgld_switch:
+        if gp_switch:
+            loss = -loss_func(preds, targets)
+        elif sgld_switch:
             loss = loss_func(preds, targets, torch.exp(model.log_noise))
         else:
             if args.dataset_type == 'multiclass':
@@ -99,8 +106,20 @@ def train(model: nn.Module,
         n_iter += len(batch)
         
         # determine reporting frequency
-        batch_size = args.batch_size_sgld if sgld_switch else args.batch_size
-        log_frequency = args.log_frequency_sgld if sgld_switch else args.log_frequency
+        if gp_switch:
+            batch_size = args.batch_size_gp
+        elif sgld_switch:
+            batch_size = args.batch_size_sgld
+        else:
+            batch_size = args.batch_size
+        
+        # determine log freq
+        if gp_switch:
+            log_frequency = args.log_frequency_gp
+        elif sgld_switch:
+            log_frequency = args.log_frequency_sgld
+        else:
+            log_frequency = args.log_frequency
 
         # Log and/or add to tensorboard
         if (n_iter // batch_size) % log_frequency == 0:

@@ -4,6 +4,7 @@ import logging
 import math
 import os
 import pickle
+import copy
 from typing import Callable, List, Tuple, Union
 
 from sklearn.metrics import auc, mean_absolute_error, mean_squared_error, precision_recall_curve, r2_score,\
@@ -72,7 +73,8 @@ def save_checkpoint(path: str,
 
 def load_checkpoint(path: str,
                     device: torch.device = None,
-                    logger: logging.Logger = None) -> MoleculeModel:
+                    logger: logging.Logger = None,
+                    template = None) -> MoleculeModel:
     """
     Loads a model checkpoint.
 
@@ -96,7 +98,10 @@ def load_checkpoint(path: str,
         args.device = device
 
     # Build model
-    model = MoleculeModel(args)
+    if template is not None:
+        model = template
+    else:
+        model = MoleculeModel(args)
     model_state_dict = model.state_dict()
 
     # Skip missing parameters and parameters of mismatched size
