@@ -16,6 +16,7 @@ from .predict import predict
 from .train import train
 from .swag_tr import train_swag
 from .sgld_tr import train_sgld
+from .gp_tr import train_gp
 from chemprop.args import TrainArgs
 from chemprop.data import StandardScaler, MoleculeDataLoader
 from chemprop.data.utils import get_class_sizes, get_data, get_task_names, split_data
@@ -23,7 +24,6 @@ from chemprop.models import MoleculeModel
 from chemprop.nn_utils import param_count
 from chemprop.utils import build_optimizer, build_lr_scheduler, get_loss_func, get_metric_func, load_checkpoint,\
     makedirs, save_checkpoint, save_smiles_splits
-
 
 
 def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
@@ -276,9 +276,23 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
                 features_scaler,
                 args,
                 save_dir_sgld)
-            
-            
-            
+        
+        # GP loop
+        if args.gp:
+            save_dir_gp = os.path.join(save_dir, 'GP_model')
+            makedirs(save_dir_gp)
+            model = train_gp(
+                model,
+                train_data,
+                val_data,
+                num_workers,
+                cache,
+                metric_func,
+                scaler,
+                features_scaler,
+                args,
+                save_dir_gp,
+                logger)
             
         
         
@@ -295,8 +309,8 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
             # draw model from collected SGLD models
             if args.sgld:
                 model = load_checkpoint(os.path.join(save_dir_sgld, f'model_{sample_idx}.pt'), device=args.device, logger=logger)
-                
-                
+            
+            
             # make predictions
             test_preds = predict(
                 model=model,
@@ -314,7 +328,9 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
                 metric_func=metric_func,
                 dataset_type=args.dataset_type,
                 logger=logger
-            )
+            )   
+            
+            
             
             # add predictions to sum_test_preds
             if len(test_preds) != 0:

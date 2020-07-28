@@ -8,6 +8,8 @@ from chemprop.args import TrainArgs
 from chemprop.data import MoleculeDataLoader, MoleculeDataset, StandardScaler
 from chemprop.bayes_utils import enable_dropout
 
+
+
 def predict(model: nn.Module,
             data_loader: MoleculeDataLoader,
             args: TrainArgs,
@@ -27,6 +29,13 @@ def predict(model: nn.Module,
     while the inner list is tasks.
     """
     
+    try:
+        model.gp_layer
+    except:
+        gp = False
+    else:
+        gp = True
+    
     # set model to eval mode
     model.eval()
     
@@ -44,7 +53,10 @@ def predict(model: nn.Module,
 
         # Make predictions
         with torch.no_grad():
-            batch_preds = model(mol_batch, features_batch)
+            if gp:
+                batch_preds = model(mol_batch, features_batch).mean
+            else:
+                batch_preds = model(mol_batch, features_batch)
 
         batch_preds = batch_preds.data.cpu().numpy()
 
