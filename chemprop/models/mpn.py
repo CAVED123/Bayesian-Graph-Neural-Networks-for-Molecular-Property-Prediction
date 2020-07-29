@@ -8,6 +8,7 @@ import torch.nn as nn
 from chemprop.args import TrainArgs
 from chemprop.features import BatchMolGraph, get_atom_fdim, get_bond_fdim, mol2graph
 from chemprop.nn_utils import index_select_ND, get_activation_function
+from chemprop.bayes import isotropic_gauss_prior, BayesLinear_Normalq
 
 
 class MPNEncoder(nn.Module):
@@ -35,6 +36,9 @@ class MPNEncoder(nn.Module):
         self.use_input_features = args.use_input_features
         self.device = args.device
         self.dropout_FFNonly = args.dropout_FFNonly
+        self.bbp = args.bbp
+        self.prior_mu_bbp = args.prior_mu_bbp
+        self.prior_sigma_bbp = args.prior_sigma_bbp
 
         if self.features_only:
             return
@@ -50,21 +54,33 @@ class MPNEncoder(nn.Module):
 
         # Input
         input_dim = self.atom_fdim if self.atom_messages else self.bond_fdim
-        self.W_i = nn.Linear(input_dim, self.hidden_size, bias=self.bias)
 
         if self.atom_messages:
             w_h_input_size = self.hidden_size + self.bond_fdim
         else:
             w_h_input_size = self.hidden_size
 
-        # Shared weight matrix across depths (default)
-        self.W_h = nn.Linear(w_h_input_size, self.hidden_size, bias=self.bias)
+        # Standard linear layers
+        if not self.bbp:
+            self.W_i = nn.Linear(input_dim, self.hidden_size, bias=self.bias)
+            self.W_h = nn.Linear(w_h_input_size, self.hidden_size, bias=self.bias)
+            self.W_o = nn.Linear(self.atom_fdim + self.hidden_size, self.hidden_size)
 
-        self.W_o = nn.Linear(self.atom_fdim + self.hidden_size, self.hidden_size)
+        
+        # BBP linear layers
+        else:
+            self.prior_instance = isotropic_gauss_prior(self.prior_mu_bbp, self.prior_sigma_bbp)
+
+            self.W_i = BayesLinear_Normalq(input_dim, self.hidden_size, self.prior_instance, bias=self.bias)
+            self.W_h = BayesLinear_Normalq(w_h_input_size, self.hidden_size, self.prior_instance, bias=self.bias)
+            self.W_o = BayesLinear_Normalq(self.atom_fdim + self.hidden_size, self.hidden_size, self.prior_instance)
+
+
 
     def forward(self,
                 mol_graph: BatchMolGraph,
-                features_batch: List[np.ndarray] = None) -> torch.FloatTensor:
+                features_batch: List[np.ndarray] = None,
+                sample = True) -> torch.FloatTensor:
         """
         Encodes a batch of molecular graphs.
 
@@ -84,13 +100,25 @@ class MPNEncoder(nn.Module):
         if self.atom_messages:
             a2a = mol_graph.get_a2a().to(self.device)
 
-        # Input
-        if self.atom_messages:
-            input = self.W_i(f_atoms)  # num_atoms x hidden_size
+        f_atoms_or_bonds = f_atoms if self.atom_messages else f_bonds
+        
+        
+        
+        
+        ##### LAYER FOR HIDDEN STATE INITIALISATION #####
+        if not self.bbp:
+            input = self.W_i(f_atoms_or_bonds)  # num_bonds x hidden_size
         else:
-            input = self.W_i(f_bonds)  # num_bonds x hidden_size
+            input, lqw, lpw = self.W_i(f_atoms_or_bonds, sample)
+            tlqw = lqw
+            tlpw = lpw
+        
         message = self.act_func(input)  # num_bonds x hidden_size
-
+        #################################################
+        
+        
+        
+                
         # Message passing
         for depth in range(self.depth - 1):
             if self.undirected:
@@ -109,19 +137,49 @@ class MPNEncoder(nn.Module):
                 rev_message = message[b2revb]  # num_bonds x hidden
                 message = a_message[b2a] - rev_message  # num_bonds x hidden
 
-            message = self.W_h(message)
+
+
+            
+            ##### LAYER FOR HIDDEN STATE UPDATES #####
+            if not self.bbp:
+                message = self.W_h(message)
+            else:
+                message, lqw, lpw = self.W_h(message, sample)
+                tlqw += lqw
+                tlpw += lpw
+            
             message = self.act_func(input + message)  # num_bonds x hidden_size
             if not self.dropout_FFNonly:
                 message = self.dropout_layer(message)  # num_bonds x hidden
+            ##########################################
+        
+        
 
+        
         a2x = a2a if self.atom_messages else a2b
         nei_a_message = index_select_ND(message, a2x)  # num_atoms x max_num_bonds x hidden
         a_message = nei_a_message.sum(dim=1)  # num_atoms x hidden
         a_input = torch.cat([f_atoms, a_message], dim=1)  # num_atoms x (atom_fdim + hidden)
-        atom_hiddens = self.act_func(self.W_o(a_input))  # num_atoms x hidden
+        
+        
+
+        
+        ##### LAYER FOR ATOM REPRESENTATION #####
+        if not self.bbp:
+            atom_hiddens = self.W_o(a_input)
+        else:
+            atom_hiddens, lqw, lpw = self.W_o(a_input, sample)
+            tlqw += lqw
+            tlpw += lpw
+                
+        atom_hiddens = self.act_func(atom_hiddens)  # num_atoms x hidden
         if not self.dropout_FFNonly:
             atom_hiddens = self.dropout_layer(atom_hiddens)  # num_atoms x hidden
-
+        #########################################
+        
+        
+        
+        
         # Readout
         mol_vecs = []
         for i, (a_start, a_size) in enumerate(a_scope):
@@ -141,8 +199,14 @@ class MPNEncoder(nn.Module):
             if len(features_batch.shape) == 1:
                 features_batch = features_batch.view([1, features_batch.shape[0]])
             mol_vecs = torch.cat([mol_vecs, features_batch], dim=1)  # (num_molecules, hidden_size)
-
-        return mol_vecs  # num_molecules x hidden
+        
+        
+        if not self.bbp:
+            return mol_vecs  # num_molecules x hidden
+        else:
+            return mol_vecs, tlqw, tlpw
+        
+        
 
 
 class MPN(nn.Module):
@@ -166,7 +230,8 @@ class MPN(nn.Module):
 
     def forward(self,
                 batch: Union[List[str], List[Chem.Mol], BatchMolGraph],
-                features_batch: List[np.ndarray] = None) -> torch.FloatTensor:
+                features_batch: List[np.ndarray] = None,
+                sample = True) -> torch.FloatTensor:
         """
         Encodes a batch of molecular SMILES strings.
 
@@ -174,9 +239,23 @@ class MPN(nn.Module):
         :param features_batch: A list of ndarrays containing additional features.
         :return: A PyTorch tensor of shape (num_molecules, hidden_size) containing the encoding of each molecule.
         """
+        
         if type(batch) != BatchMolGraph:
             batch = mol2graph(batch)
 
-        output = self.encoder.forward(batch, features_batch)
+        
+        return self.encoder.forward(batch, features_batch, sample)
 
-        return output
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

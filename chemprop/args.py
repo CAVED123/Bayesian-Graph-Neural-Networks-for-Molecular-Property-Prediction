@@ -171,8 +171,17 @@ class TrainArgs(CommonArgs):
     
     
     
+    
     # BBP
-
+    bbp: bool = False
+    
+    prior_mu_bbp: float = 0
+    prior_sigma_bbp: float = 1
+    
+    
+    
+    
+    
     
     
     # General arguments
