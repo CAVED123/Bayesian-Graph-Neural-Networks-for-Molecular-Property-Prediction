@@ -141,7 +141,7 @@ class TrainArgs(CommonArgs):
     
     # SGLD
     sgld: bool = False # switch for SGLD
-    init_log_noise: float = -2 # initial estimate of log sigma for learned parameter
+    init_log_noise_sgld: float = -2 # initial estimate of log sigma for learned parameter
     
     lr_sgld: float = 1e-4 # learning rate
     weight_decay_sgld: float = 0
@@ -173,11 +173,7 @@ class TrainArgs(CommonArgs):
     
     
     # BBP
-    bbp: bool = False
-    
-    prior_mu_bbp: float = 0
-    prior_sigma_bbp: float = 1
-    
+    # note: uses standard data loaders / batch size args
     
     
     

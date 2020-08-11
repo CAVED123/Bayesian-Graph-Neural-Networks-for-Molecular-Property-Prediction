@@ -8,13 +8,13 @@ import torch.nn as nn
 from chemprop.args import TrainArgs
 from chemprop.features import BatchMolGraph, get_atom_fdim, get_bond_fdim, mol2graph
 from chemprop.nn_utils import index_select_ND, get_activation_function
-from chemprop.bayes import isotropic_gauss_prior, BayesLinear_Normalq
+from chemprop.bayes import BayesLinear
 
 
 class MPNEncoder(nn.Module):
     """A message passing neural network for encoding a molecule."""
 
-    def __init__(self, args: TrainArgs, atom_fdim: int, bond_fdim: int):
+    def __init__(self, args: TrainArgs, atom_fdim: int, bond_fdim: int, bbp = False):
         """Initializes the MPNEncoder.
 
         :param args: Arguments.
@@ -36,9 +36,8 @@ class MPNEncoder(nn.Module):
         self.use_input_features = args.use_input_features
         self.device = args.device
         self.dropout_FFNonly = args.dropout_FFNonly
-        self.bbp = args.bbp
-        self.prior_mu_bbp = args.prior_mu_bbp
-        self.prior_sigma_bbp = args.prior_sigma_bbp
+        self.bbp = bbp
+        self.prior_sig = args.prior_sig_bbp
 
         if self.features_only:
             return
@@ -69,18 +68,16 @@ class MPNEncoder(nn.Module):
         
         # BBP linear layers
         else:
-            self.prior_instance = isotropic_gauss_prior(self.prior_mu_bbp, self.prior_sigma_bbp)
-
-            self.W_i = BayesLinear_Normalq(input_dim, self.hidden_size, self.prior_instance, bias=self.bias)
-            self.W_h = BayesLinear_Normalq(w_h_input_size, self.hidden_size, self.prior_instance, bias=self.bias)
-            self.W_o = BayesLinear_Normalq(self.atom_fdim + self.hidden_size, self.hidden_size, self.prior_instance)
+            self.W_i = BayesLinear(input_dim, self.hidden_size, self.prior_sig, bias=self.bias)
+            self.W_h = BayesLinear(w_h_input_size, self.hidden_size, self.prior_sig, bias=self.bias)
+            self.W_o = BayesLinear(self.atom_fdim + self.hidden_size, self.hidden_size, self.prior_sig)
 
 
 
     def forward(self,
                 mol_graph: BatchMolGraph,
                 features_batch: List[np.ndarray] = None,
-                sample = True) -> torch.FloatTensor:
+                sample = False) -> torch.FloatTensor:
         """
         Encodes a batch of molecular graphs.
 
@@ -109,9 +106,8 @@ class MPNEncoder(nn.Module):
         if not self.bbp:
             input = self.W_i(f_atoms_or_bonds)  # num_bonds x hidden_size
         else:
-            input, lqw, lpw = self.W_i(f_atoms_or_bonds, sample)
-            tlqw = lqw
-            tlpw = lpw
+            input, kl = self.W_i(f_atoms_or_bonds, sample)
+            tkl = kl
         
         message = self.act_func(input)  # num_bonds x hidden_size
         #################################################
@@ -144,9 +140,9 @@ class MPNEncoder(nn.Module):
             if not self.bbp:
                 message = self.W_h(message)
             else:
-                message, lqw, lpw = self.W_h(message, sample)
-                tlqw += lqw
-                tlpw += lpw
+                message, kl = self.W_h(message, sample)
+                if depth == 0:
+                    tkl += kl # ONLY ADD ON KL LOSS ONCE
             
             message = self.act_func(input + message)  # num_bonds x hidden_size
             if not self.dropout_FFNonly:
@@ -168,9 +164,8 @@ class MPNEncoder(nn.Module):
         if not self.bbp:
             atom_hiddens = self.W_o(a_input)
         else:
-            atom_hiddens, lqw, lpw = self.W_o(a_input, sample)
-            tlqw += lqw
-            tlpw += lpw
+            atom_hiddens, kl = self.W_o(a_input, sample)
+            tkl += kl
                 
         atom_hiddens = self.act_func(atom_hiddens)  # num_atoms x hidden
         if not self.dropout_FFNonly:
@@ -204,7 +199,7 @@ class MPNEncoder(nn.Module):
         if not self.bbp:
             return mol_vecs  # num_molecules x hidden
         else:
-            return mol_vecs, tlqw, tlpw
+            return mol_vecs, tkl
         
         
 
@@ -215,7 +210,8 @@ class MPN(nn.Module):
     def __init__(self,
                  args: TrainArgs,
                  atom_fdim: int = None,
-                 bond_fdim: int = None):
+                 bond_fdim: int = None,
+                 bbp = False):
         """
         Initializes the MPN.
 
@@ -226,12 +222,13 @@ class MPN(nn.Module):
         super(MPN, self).__init__()
         self.atom_fdim = atom_fdim or get_atom_fdim()
         self.bond_fdim = bond_fdim or get_bond_fdim(atom_messages=args.atom_messages)
-        self.encoder = MPNEncoder(args, self.atom_fdim, self.bond_fdim)
+        self.bbp = bbp
+        self.encoder = MPNEncoder(args, self.atom_fdim, self.bond_fdim, self.bbp)
 
     def forward(self,
                 batch: Union[List[str], List[Chem.Mol], BatchMolGraph],
                 features_batch: List[np.ndarray] = None,
-                sample = True) -> torch.FloatTensor:
+                sample = False) -> torch.FloatTensor:
         """
         Encodes a batch of molecular SMILES strings.
 

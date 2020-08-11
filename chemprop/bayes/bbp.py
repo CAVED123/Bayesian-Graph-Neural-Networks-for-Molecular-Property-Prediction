@@ -1,118 +1,133 @@
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 from torch.autograd import Variable
 
 
 
 
-def isotropic_gauss_loglike(x, mu, sigma, do_sum=True):
-    cte_term = -(0.5) * np.log(2 * np.pi)
-    det_sig_term = -torch.log(sigma)
-    inner = (x - mu) / sigma
-    dist_term = -(0.5) * (inner ** 2)
-
-    if do_sum:
-        out = (cte_term + det_sig_term + dist_term).sum()  # sum over all weights
-    else:
-        out = (cte_term + det_sig_term + dist_term)
-    return out
-
-
-
-
-class isotropic_gauss_prior(object):
-    def __init__(self, mu, sigma):
-        self.mu = mu
-        self.sigma = sigma
-
-        self.cte_term = -(0.5) * np.log(2 * np.pi)
-        self.det_sig_term = -np.log(self.sigma)
-
-    def loglike(self, x, do_sum=True):
-
-        dist_term = -(0.5) * ((x - self.mu) / self.sigma) ** 2
-        if do_sum:
-            return (self.cte_term + self.det_sig_term + dist_term).sum()
-        else:
-            return (self.cte_term + self.det_sig_term + dist_term)
-
-
-
-
-class BayesLinear_Normalq(nn.Module):
-    
+def data_loss_bbp(output, target, sigma):
     """
-    Linear Layer where weights are sampled from a fully factorised Normal with learnable parameters.
-    The likelihood of the weight samples under the prior and the approximate posterior are returned with each forward pass.
+    Gaussian log likelihood (scaled, per example)
     """
     
-    def __init__(self, n_in, n_out, prior_class, bias = True):
+    exponent = -0.5*torch.sum(
+        (target - output)**2/sigma**2
+        , 1)
+
+    log_coeff = -torch.sum(torch.log(sigma))
+    
+    scale = 1 / len(exponent)
+    
+    return - scale * (log_coeff + exponent).sum()
+
+
+
+def KLD_cost(mu_p, sig_p, mu_q, sig_q):
+    KLD = 0.5 * (2 * torch.log(sig_p / sig_q) - 1 + (sig_q / sig_p).pow(2) + ((mu_p - mu_q) / sig_p).pow(2)).sum()
+    # https://arxiv.org/abs/1312.6114 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
+    #print(2 * torch.log(sig_p / sig_q).sum())
+    #print(((sig_q / sig_p).pow(2)).sum())
+    #print((((mu_p - mu_q) / sig_p).pow(2)).sum())
+    return KLD
+
+    
+
+class BayesLinear(nn.Module):
+    
+    """
+    Linear Layer where activations are sampled from a fully factorised normal which is given by aggregating
+    the moments of each weight's normal distribution. The KL divergence is obtained in closed form. Only works
+    with gaussian priors.
+    """
+    
+    def __init__(self, n_in, n_out, prior_sig, bias = True):
         
-        super(BayesLinear_Normalq, self).__init__()
+        super(BayesLinear, self).__init__()
         
         self.n_in = n_in
         self.n_out = n_out
         self.bias = bias
-        self.prior = prior_class
-
-        # initialise mu and p for weights
-        self.W_mu = nn.Parameter(torch.Tensor(self.n_in, self.n_out).uniform_(-0.05, 0.05))
-        self.W_p = nn.Parameter(torch.Tensor(self.n_in, self.n_out).uniform_(-2, -1))
+        self.prior_sig = prior_sig
         
-        # initialise mu and p for biases
+        # initialise mu for weights
+        self.W_mu = nn.Parameter(torch.Tensor(self.n_in, self.n_out).uniform_(-0.02, 0.02))
+        
+        # initialise mu for biases
         if self.bias:
-            self.b_mu = nn.Parameter(torch.Tensor(self.n_out).uniform_(-0.05, 0.05))
-            self.b_p = nn.Parameter(torch.Tensor(self.n_out).uniform_(-2, -1))
+            self.b_mu = nn.Parameter(torch.Tensor(self.n_out).uniform_(-0.02, 0.02))
+
+    
+    def init_rho(self, p_min, p_max):
+        self.W_p = nn.Parameter(torch.Tensor(self.n_in, self.n_out).uniform_(p_min, p_max))
+        if self.bias:
+            self.b_p = nn.Parameter(torch.Tensor(self.n_out).uniform_(p_min, p_max))     
+
+
+    def forward(self, X, sample=False):
         
+        if sample:
 
-    def forward(self, X, sample=True):
+            ### weights
+            
+            std_w = 1e-6 + F.softplus(self.W_p, beta=1, threshold=20) # compute stds for weights
+            assert np.all(np.isfinite(self.W_p.detach().numpy()))
+            assert np.all(np.isfinite(X.detach().numpy()))
+            
+            
+            act_W_mu = torch.mm(X, self.W_mu)  # activation means
+            assert np.all(np.isfinite(act_W_mu.detach().numpy()))
+            act_W_std = torch.sqrt(torch.clamp_min(torch.mm(X.pow(2), std_w.pow(2)),1e-6)) # actiavtion stds
 
-        if not sample:
+            assert np.all(np.isfinite(act_W_std.detach().numpy()))
+            #assert torch.all(act_W_std > 0)
+            
+            # try torch.randn_like(act_W_std)
+            eps_W = Variable(self.W_mu.data.new(act_W_std.size()).normal_(mean=0, std=1)) # draw samples from 0,1 gaussian
+            assert np.all(np.isfinite(eps_W.detach().numpy()))
+            act_W_out = act_W_mu + act_W_std * eps_W # sample weights from 'posterior'
+            
+            output = act_W_out
+            assert np.all(np.isfinite(output.detach().numpy()))
+            kld = KLD_cost(mu_p=0, sig_p=self.prior_sig, mu_q=self.W_mu, sig_q=std_w)
+            
+            if self.bias:
+                
+                ### biases
+                
+                std_b = 1e-6 + F.softplus(self.b_p, beta=1, threshold=20) # compute stds for biases
+                assert torch.all(std_b > 0)
+                
+                eps_b = Variable(self.b_mu.data.new(std_b.size()).normal_(mean=0, std=1)) # draw samples from 0,1 gaussian
+                act_b_out = self.b_mu + std_b * eps_b # sample biases from 'posterior'
+            
+                output += act_b_out.unsqueeze(0).expand(X.shape[0], -1)
+    
+                kld += KLD_cost(mu_p=0, sig_p=self.prior_sig, mu_q=self.b_mu, sig_q=std_b)
+       
+            
+            assert np.all(np.isfinite(output.detach().numpy()))
+            assert np.all(np.isfinite(kld.detach().numpy()))
+            return output, kld
+        
+        
+        else:
             
             output = torch.mm(X, self.W_mu)
             
+            # kld is just standard regularisation term
+            kld = 0.5*((self.W_mu / self.prior_sig).pow(2)).sum()
+            
             if self.bias:
                 output += self.b_mu.expand(X.size()[0], self.n_out)
-            
-            return output, 0, 0
-
-        else:
-
-            # Tensor.new()  Constructs a new tensor of the same data type as self tensor.
-            # the same random sample is used for every element in the minibatch
-            eps_W = Variable(self.W_mu.data.new(self.W_mu.size()).normal_())
-            std_w = 1e-6 + F.softplus(self.W_p, beta=1, threshold=20)
-            W = self.W_mu + 1 * std_w * eps_W
-            
-            output = torch.mm(X, W)
-            
-            lqw = isotropic_gauss_loglike(W, self.W_mu, std_w)
-            lpw = self.prior.loglike(W)
-            
-            if self.bias:
-                eps_b = Variable(self.b_mu.data.new(self.b_mu.size()).normal_())
-                std_b = 1e-6 + F.softplus(self.b_p, beta=1, threshold=20)
-                b = self.b_mu + 1 * std_b * eps_b
                 
-                output += b.unsqueeze(0).expand(X.shape[0], -1)  # (batch_size, n_output)
-                
-                lqw += isotropic_gauss_loglike(b, self.b_mu, std_b)
-                lpw += self.prior.loglike(b)
-                
-                
-            return output, lqw, lpw
+                kld += 0.5*((self.b_mu / self.prior_sig).pow(2)).sum()
+            
+            
+            return output, kld
+        
+        
+        
 
-
-
-
-
-
-
-
-
-
-
-
-
+    

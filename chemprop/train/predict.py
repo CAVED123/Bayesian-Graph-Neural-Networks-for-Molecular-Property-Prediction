@@ -7,7 +7,7 @@ from tqdm import tqdm
 from chemprop.args import TrainArgs
 from chemprop.data import MoleculeDataLoader, MoleculeDataset, StandardScaler
 from chemprop.bayes_utils import enable_dropout
-
+from chemprop.bayes import BayesLinear
 
 
 def predict(model: nn.Module,
@@ -15,7 +15,8 @@ def predict(model: nn.Module,
             args: TrainArgs,
             disable_progress_bar: bool = False,
             scaler: StandardScaler = None,
-            test_data: bool = False) -> List[List[float]]:
+            test_data: bool = False,
+            bbp_sample: bool = False) -> List[List[float]]:
     """
     Makes predictions on a dataset using an ensemble of models.
 
@@ -29,12 +30,21 @@ def predict(model: nn.Module,
     while the inner list is tasks.
     """
     
+    ########## detection of gp or bayeslinear layer
+    
     try:
         model.gp_layer
     except:
         gp = False
     else:
         gp = True
+        
+    bbp = False
+    for layer in model.children():
+        if isinstance(layer, BayesLinear):
+            bbp = True
+            break
+    
     
     # set model to eval mode
     model.eval()
@@ -55,6 +65,8 @@ def predict(model: nn.Module,
         with torch.no_grad():
             if gp:
                 batch_preds = model(mol_batch, features_batch).mean
+            elif bbp:
+                batch_preds, _ = model(mol_batch, features_batch, sample=bbp_sample)
             else:
                 batch_preds = model(mol_batch, features_batch)
 

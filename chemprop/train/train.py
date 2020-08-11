@@ -1,6 +1,6 @@
 import logging
 from typing import Callable
-
+import numpy as np
 from tensorboardX import SummaryWriter
 import torch
 import torch.nn as nn
@@ -25,7 +25,8 @@ def train(model: nn.Module,
           swag_model: nn.Module = None,
           sgld_switch: bool = False,
           gp_switch: bool = False,
-          likelihood = None) -> int:
+          likelihood = None,
+          bbp_switch = None) -> int:
     """
     Trains a model for an epoch.
 
@@ -41,6 +42,10 @@ def train(model: nn.Module,
     :param swag_model: SWAG model containing stored moments and deviations
     :return: The total number of iterations (training examples) trained on so far.
     """
+    
+    
+
+        
     debug = logger.debug if logger is not None else print
     
     model.train()
@@ -63,36 +68,89 @@ def train(model: nn.Module,
         # where targets are None, replace with 0
         targets = torch.Tensor([[0 if x is None else x for x in tb] for tb in target_batch])
 
-        # zero gradients
-        model.zero_grad()
-        optimizer.zero_grad()
-        
-        # forward pass
-        preds = model(mol_batch, features_batch)
-
         # Move tensors to correct device
         mask = mask.to(args.device)
         targets = targets.to(args.device)
         class_weights = torch.ones(targets.shape, device=args.device)
-
-
-        ### compute loss
-        if gp_switch:
-            loss = -loss_func(preds, targets)
-        elif sgld_switch:
-            loss = loss_func(preds, targets, torch.exp(model.log_noise))
-        else:
-            if args.dataset_type == 'multiclass':
-                targets = targets.long()
-                loss = torch.cat([loss_func(preds[:, target_index, :], targets[:, target_index]).unsqueeze(1) for target_index in range(preds.size(1))], dim=1) * class_weights * mask
-            else:
-                loss = loss_func(preds, targets) * class_weights * mask
-            loss = loss.sum() / mask.sum() # average per molecule per task   
         
+        # zero gradients
+        model.zero_grad()
+        optimizer.zero_grad()
+        
+        
+        
+        
+        
+        
+        ##### FORWARD PASS AND LOSS COMPUTATION #####
+        
+        
+        if bbp_switch == None:
+        
+            # forward pass
+            preds = model(mol_batch, features_batch)
+    
+            # compute loss
+            if gp_switch:
+                loss = -loss_func(preds, targets)
+            elif sgld_switch:
+                loss = loss_func(preds, targets, torch.exp(model.log_noise))
+            else:
+                if args.dataset_type == 'multiclass':
+                    targets = targets.long()
+                    loss = torch.cat([loss_func(preds[:, target_index, :], targets[:, target_index]).unsqueeze(1) for target_index in range(preds.size(1))], dim=1) * class_weights * mask
+                else:
+                    loss = loss_func(preds, targets) * class_weights * mask
+                loss = loss.sum() / mask.sum() # average per molecule per task   
+        
+        
+        ### bbp non sample option
+        if bbp_switch == 1:    
+            preds, tkl = model(mol_batch, features_batch, sample = False)
+            mlpdw = loss_func(preds, targets, torch.exp(model.log_noise))
+            Edkl = tkl / args.train_data_size
+            loss = Edkl + mlpdw  
+            
+        ### bbp sample option
+        if bbp_switch == 2:
 
+            if args.samples_bbp == 1:
+                preds, tkl = model(mol_batch, features_batch, sample=True)
+                mlpdw = loss_func(preds, targets, torch.exp(model.log_noise))
+                Edkl = tkl / args.train_data_size
+        
+            elif args.samples_bbp > 1:
+                mlpdw_cum = 0
+                Edkl_cum = 0
+        
+                for i in range(args.samples_bbp):
+                    preds, tkl = model(mol_batch, features_batch, sample=True)
+                    mlpdw_i = loss_func(preds, targets, torch.exp(model.log_noise))                    
+                    Edkl_i = tkl / args.train_data_size                    
+                    
+                    mlpdw_cum = mlpdw_cum + mlpdw_i
+                    Edkl_cum = Edkl_cum + Edkl_i
+        
+                mlpdw = mlpdw_cum / args.samples_bbp
+                Edkl = Edkl_cum / args.samples_bbp
+            
+            loss = Edkl + mlpdw
+            
+        #############################################
+        
+        
+        
+        
+        
+        
         # backward pass; update weights
         loss.backward()
         optimizer.step()
+        
+        
+        #for name, parameter in model.named_parameters():
+            #print(name)#, parameter.grad)
+            #print(np.sum(np.array(parameter.grad)))
 
         # add to loss_sum and iter_count
         loss_sum += loss.item()
@@ -140,7 +198,12 @@ def train(model: nn.Module,
                 writer.add_scalar('gradient_norm', gnorm, n_iter)
                 for i, lr in enumerate(lrs):
                     writer.add_scalar(f'learning_rate_{i}', lr, n_iter)
-        
+            
+            print('kl term')
+            print(Edkl)
+            print('data')
+            print(mlpdw)
+            
         # SWAG update
         if (swag_model is not None) and ((n_iter // args.batch_size) % args.c_swag == 0):
             swag_model.collect_model(model)
