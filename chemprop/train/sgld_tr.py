@@ -66,7 +66,7 @@ def train_sgld(
     n_iter = 0
     sample_idx = 0
     for epoch in range(epochs_sgld):
-        print(f'SGLD spoch {epoch}')
+        print(f'SGLD epoch {epoch}')
     
         n_iter = train(
                 model=model,

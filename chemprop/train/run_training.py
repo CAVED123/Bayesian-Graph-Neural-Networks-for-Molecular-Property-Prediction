@@ -17,6 +17,7 @@ from .train import train
 from .swag_tr import train_swag
 from .sgld_tr import train_sgld
 from .gp_tr import train_gp
+from .bbp_tr import train_bbp
 from chemprop.args import TrainArgs
 from chemprop.data import StandardScaler, MoleculeDataLoader
 from chemprop.data.utils import get_class_sizes, get_data, get_task_names, split_data
@@ -189,7 +190,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
         
 
         # Ensure that model is saved in correct location for evaluation if 0 epochs
-        save_checkpoint(os.path.join(save_dir, 'model.pt'), model, scaler, features_scaler, args)
+        #save_checkpoint(os.path.join(save_dir, 'model.pt'), model, scaler, features_scaler, args)
 
         # Optimizers
         optimizer = build_optimizer(model, args)
@@ -201,6 +202,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
         best_score = float('inf') if args.minimize_score else -float('inf')
         best_epoch, n_iter = 0, 0
         for epoch in range(args.epochs):
+            break
             debug(f'Epoch {epoch}')
 
             n_iter = train(
@@ -293,7 +295,23 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
                 args,
                 save_dir_gp,
                 logger)
-            
+        
+        # BBP
+        if args.bbp:
+            save_dir_bbp = os.path.join(save_dir, 'bbp_models')
+            makedirs(save_dir_bbp)
+            model = train_bbp(
+                model,
+                train_data_loader,
+                val_data_loader,
+                metric_func,
+                scaler,
+                features_scaler,
+                args,
+                save_dir_bbp)
+
+
+
         
         
         ##################################
@@ -317,7 +335,8 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
                 data_loader=test_data_loader,
                 args=args,
                 scaler=scaler,
-                test_data=True
+                test_data=True,
+                bbp_sample=True
             )
             
             # evaluate predictions using metric function

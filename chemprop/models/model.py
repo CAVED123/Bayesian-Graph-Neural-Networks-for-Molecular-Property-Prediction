@@ -102,7 +102,7 @@ class MoleculeModel(nn.Module):
         """
         Adds an additional parameter to the model to learn log noise.
         """
-        self.log_noise = nn.Parameter(torch.ones(args.num_tasks)*args.init_log_noise)
+        self.log_noise = nn.Parameter(torch.ones(args.num_tasks)*args.init_log_noise_sgld)
         
     def featurize(self, *input):
         """
