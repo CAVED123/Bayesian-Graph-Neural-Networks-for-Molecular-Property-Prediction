@@ -4,3 +4,4 @@ from .make_predictions import make_predictions
 from .predict import predict
 from .run_training import run_training
 from .train import train
+from .swag_tr import train_swag

@@ -14,6 +14,10 @@ from torch.optim.lr_scheduler import ExponentialLR
 from .evaluate import evaluate, evaluate_predictions
 from .predict import predict
 from .train import train
+from .swag_tr import train_swag
+from .sgld_tr import train_sgld
+from .gp_tr import train_gp
+from .bbp_tr import train_bbp
 from chemprop.args import TrainArgs
 from chemprop.data import StandardScaler, MoleculeDataLoader
 from chemprop.data.utils import get_class_sizes, get_data, get_task_names, split_data
@@ -154,8 +158,14 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
         cache=cache
     )
 
-    # Train ensemble of models
+
+
+    ###########################################
+    ########## Outer loop over ensemble members
+    ###########################################
+    
     for model_idx in range(args.ensemble_size):
+        
         # Tensorboard writer
         save_dir = os.path.join(args.save_dir, f'model_{model_idx}')
         makedirs(save_dir)
@@ -177,9 +187,10 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
         if args.cuda:
             debug('Moving model to cuda')
         model = model.to(args.device)
+        
 
         # Ensure that model is saved in correct location for evaluation if 0 epochs
-        save_checkpoint(os.path.join(save_dir, 'model.pt'), model, scaler, features_scaler, args)
+        #save_checkpoint(os.path.join(save_dir, 'model.pt'), model, scaler, features_scaler, args)
 
         # Optimizers
         optimizer = build_optimizer(model, args)
@@ -190,7 +201,8 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
         # Run training
         best_score = float('inf') if args.minimize_score else -float('inf')
         best_epoch, n_iter = 0, 0
-        for epoch in trange(args.epochs):
+        for epoch in range(args.epochs):
+            break
             debug(f'Epoch {epoch}')
 
             n_iter = train(
@@ -209,6 +221,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
             val_scores = evaluate(
                 model=model,
                 data_loader=val_data_loader,
+                args=args,
                 num_tasks=args.num_tasks,
                 metric_func=metric_func,
                 dataset_type=args.dataset_type,
@@ -233,43 +246,143 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
                 best_score, best_epoch = avg_val_score, epoch
                 save_checkpoint(os.path.join(save_dir, 'model.pt'), model, scaler, features_scaler, args)        
 
-        # Evaluate on test set using model with best validation score
+        
+        # load model with best validation score
         info(f'Model {model_idx} best validation {args.metric} = {best_score:.6f} on epoch {best_epoch}')
         model = load_checkpoint(os.path.join(save_dir, 'model.pt'), device=args.device, logger=logger)
         
-        test_preds = predict(
-            model=model,
-            data_loader=test_data_loader,
-            scaler=scaler
-        )
-        test_scores = evaluate_predictions(
-            preds=test_preds,
-            targets=test_targets,
-            num_tasks=args.num_tasks,
-            metric_func=metric_func,
-            dataset_type=args.dataset_type,
-            logger=logger
-        )
+        
+        # SWAG training loop, returns swag_model
+        if args.swag:
+            model = train_swag(
+                model,
+                train_data_loader,
+                val_data_loader,
+                loss_func,
+                metric_func,
+                args,
+                scaler)
+        
+        # SGLD loop, which saves nets
+        if args.sgld:
+            save_dir_sgld = os.path.join(save_dir, 'SGLD_models')
+            makedirs(save_dir_sgld)
+            model = train_sgld(
+                model,
+                train_data,
+                val_data,
+                num_workers,
+                cache,
+                metric_func,
+                scaler,
+                features_scaler,
+                args,
+                save_dir_sgld)
+        
+        # GP loop
+        if args.gp:
+            save_dir_gp = os.path.join(save_dir, 'GP_model')
+            makedirs(save_dir_gp)
+            model = train_gp(
+                model,
+                train_data,
+                val_data,
+                num_workers,
+                cache,
+                metric_func,
+                scaler,
+                features_scaler,
+                args,
+                save_dir_gp,
+                logger)
+        
+        # BBP
+        if args.bbp:
+            save_dir_bbp = os.path.join(save_dir, 'bbp_models')
+            makedirs(save_dir_bbp)
+            model = train_bbp(
+                model,
+                train_data_loader,
+                val_data_loader,
+                metric_func,
+                scaler,
+                features_scaler,
+                args,
+                save_dir_bbp)
 
-        if len(test_preds) != 0:
-            sum_test_preds += np.array(test_preds)
 
-        # Average test score
-        avg_test_score = np.nanmean(test_scores)
-        info(f'Model {model_idx} test {args.metric} = {avg_test_score:.6f}')
-        writer.add_scalar(f'test_{args.metric}', avg_test_score, 0)
 
-        if args.show_individual_scores:
-            # Individual test scores
-            for task_name, test_score in zip(args.task_names, test_scores):
-                info(f'Model {model_idx} test {task_name} {args.metric} = {test_score:.6f}')
-                writer.add_scalar(f'test_{task_name}_{args.metric}', test_score, n_iter)
-        writer.close()
+        
+        
+        ##################################
+        ########## Inner loop over samples
+        ##################################
+        
+        for sample_idx in range(args.samples):
+            
+            # draw model from SWAG posterior
+            if args.swag:
+                model.sample(scale=1.0, cov=args.cov_mat, block=args.block)
+            
+            # draw model from collected SGLD models
+            if args.sgld:
+                model = load_checkpoint(os.path.join(save_dir_sgld, f'model_{sample_idx}.pt'), device=args.device, logger=logger)
+            
+            
+            # make predictions
+            test_preds = predict(
+                model=model,
+                data_loader=test_data_loader,
+                args=args,
+                scaler=scaler,
+                test_data=True,
+                bbp_sample=True
+            )
+            
+            # evaluate predictions using metric function
+            test_scores = evaluate_predictions(
+                preds=test_preds,
+                targets=test_targets,
+                num_tasks=args.num_tasks,
+                metric_func=metric_func,
+                dataset_type=args.dataset_type,
+                logger=logger
+            )   
+            
+            
+            
+            # add predictions to sum_test_preds
+            if len(test_preds) != 0:
+                sum_test_preds += np.array(test_preds)
+    
+            # compute average test score
+            avg_test_score = np.nanmean(test_scores)
+            info(f'Model {model_idx}, sample {sample_idx} test {args.metric} = {avg_test_score:.6f}')
+            writer.add_scalar(f'test_{args.metric}', avg_test_score, 0)
+    
+            # show individual test scores
+            if args.show_individual_scores:
+                for task_name, test_score in zip(args.task_names, test_scores):
+                    info(f'Model {model_idx}, sample {sample_idx} test {task_name} {args.metric} = {test_score:.6f}')
+                    writer.add_scalar(f'test_{task_name}_{args.metric}', test_score, n_iter)
+            writer.close()
 
-    # Evaluate ensemble on test set
-    avg_test_preds = (sum_test_preds / args.ensemble_size).tolist()
 
-    ensemble_scores = evaluate_predictions(
+
+    #################################
+    ########## Bayesian Model Average
+    #################################
+    
+    # note: this may be an average of Bayesian samples and/or components in an ensemble
+            
+    # compute number of prediction iterations
+    pred_iterations = args.ensemble_size * args.samples
+    
+    # average predictions across iterations
+    avg_test_preds = (sum_test_preds / pred_iterations).tolist()
+
+    # evaluate
+    BMA_scores = evaluate_predictions(
         preds=avg_test_preds,
         targets=test_targets,
         num_tasks=args.num_tasks,
@@ -278,13 +391,21 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
         logger=logger
     )
 
-    # Average ensemble score
-    avg_ensemble_test_score = np.nanmean(ensemble_scores)
-    info(f'Ensemble test {args.metric} = {avg_ensemble_test_score:.6f}')
+    # average scores across tasks
+    avg_BMA_test_score = np.nanmean(BMA_scores)
+    info(f'BMA test {args.metric} = {avg_BMA_test_score:.6f}')
 
-    # Individual ensemble scores
+    # individual scores
     if args.show_individual_scores:
-        for task_name, ensemble_score in zip(args.task_names, ensemble_scores):
-            info(f'Ensemble test {task_name} {args.metric} = {ensemble_score:.6f}')
+        for task_name, BMA_score in zip(args.task_names, BMA_scores):
+            info(f'BMA test {task_name} {args.metric} = {BMA_score:.6f}')
 
-    return ensemble_scores
+    return BMA_scores
+
+
+
+
+
+
+
+

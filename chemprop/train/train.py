@@ -1,6 +1,6 @@
 import logging
 from typing import Callable
-
+import numpy as np
 from tensorboardX import SummaryWriter
 import torch
 import torch.nn as nn
@@ -21,7 +21,12 @@ def train(model: nn.Module,
           args: TrainArgs,
           n_iter: int = 0,
           logger: logging.Logger = None,
-          writer: SummaryWriter = None) -> int:
+          writer: SummaryWriter = None,
+          swag_model: nn.Module = None,
+          sgld_switch: bool = False,
+          gp_switch: bool = False,
+          likelihood = None,
+          bbp_switch = None) -> int:
     """
     Trains a model for an epoch.
 
@@ -34,52 +39,153 @@ def train(model: nn.Module,
     :param n_iter: The number of iterations (training examples) trained on so far.
     :param logger: A logger for printing intermediate results.
     :param writer: A tensorboardX SummaryWriter.
+    :param swag_model: SWAG model containing stored moments and deviations
     :return: The total number of iterations (training examples) trained on so far.
     """
+    
+    
+
+        
     debug = logger.debug if logger is not None else print
     
     model.train()
+    if likelihood is not None:
+        likelihood.train()
     loss_sum, iter_count = 0, 0
 
-    for batch in tqdm(data_loader, total=len(data_loader)):
+    #for batch in tqdm(data_loader, total=len(data_loader)):
+    for batch in data_loader:
         # Prepare batch
         batch: MoleculeDataset
+        
+        # .batch_graph() returns BatchMolGraph
+        # .features() returns None if no additional features
+        # .targets() returns list of lists of floats containing the targets
         mol_batch, features_batch, target_batch = batch.batch_graph(), batch.features(), batch.targets()
+        
+        # mask is 1 where targets are not None
         mask = torch.Tensor([[x is not None for x in tb] for tb in target_batch])
+        # where targets are None, replace with 0
         targets = torch.Tensor([[0 if x is None else x for x in tb] for tb in target_batch])
 
-        # Run model
-        model.zero_grad()
-        preds = model(mol_batch, features_batch)
-
         # Move tensors to correct device
-        mask = mask.to(preds.device)
-        targets = targets.to(preds.device)
-        class_weights = torch.ones(targets.shape, device=preds.device)
+        mask = mask.to(args.device)
+        targets = targets.to(args.device)
+        class_weights = torch.ones(targets.shape, device=args.device)
+        
+        # zero gradients
+        model.zero_grad()
+        optimizer.zero_grad()
+        
+        
+        
+        
+        
+        
+        ##### FORWARD PASS AND LOSS COMPUTATION #####
+        
+        
+        if bbp_switch == None:
+        
+            # forward pass
+            preds = model(mol_batch, features_batch)
+    
+            # compute loss
+            if gp_switch:
+                loss = -loss_func(preds, targets)
+            elif sgld_switch:
+                loss = loss_func(preds, targets, torch.exp(model.log_noise))
+            else:
+                if args.dataset_type == 'multiclass':
+                    targets = targets.long()
+                    loss = torch.cat([loss_func(preds[:, target_index, :], targets[:, target_index]).unsqueeze(1) for target_index in range(preds.size(1))], dim=1) * class_weights * mask
+                else:
+                    loss = loss_func(preds, targets) * class_weights * mask
+                loss = loss.sum() / mask.sum() # average per molecule per task   
+        
+        
+        ### bbp non sample option
+        if bbp_switch == 1:    
+            preds, tkl = model(mol_batch, features_batch, sample = False)
+            mlpdw = loss_func(preds, targets, torch.exp(model.log_noise))
+            Edkl = tkl / args.train_data_size
+            loss = Edkl + mlpdw  
+            
+        ### bbp sample option
+        if bbp_switch == 2:
 
-        if args.dataset_type == 'multiclass':
-            targets = targets.long()
-            loss = torch.cat([loss_func(preds[:, target_index, :], targets[:, target_index]).unsqueeze(1) for target_index in range(preds.size(1))], dim=1) * class_weights * mask
-        else:
-            loss = loss_func(preds, targets) * class_weights * mask
-        loss = loss.sum() / mask.sum()
+            if args.samples_bbp == 1:
+                preds, tkl = model(mol_batch, features_batch, sample=True)
+                mlpdw = loss_func(preds, targets, torch.exp(model.log_noise))
+                Edkl = tkl / args.train_data_size
+        
+            elif args.samples_bbp > 1:
+                mlpdw_cum = 0
+                Edkl_cum = 0
+        
+                for i in range(args.samples_bbp):
+                    preds, tkl = model(mol_batch, features_batch, sample=True)
+                    mlpdw_i = loss_func(preds, targets, torch.exp(model.log_noise))                    
+                    Edkl_i = tkl / args.train_data_size                    
+                    
+                    mlpdw_cum = mlpdw_cum + mlpdw_i
+                    Edkl_cum = Edkl_cum + Edkl_i
+        
+                mlpdw = mlpdw_cum / args.samples_bbp
+                Edkl = Edkl_cum / args.samples_bbp
+            
+            loss = Edkl + mlpdw
+            
+        #############################################
+        
+        
+        
+        
+        
+        
+        # backward pass; update weights
+        loss.backward()
+        optimizer.step()
+        
+        
+        #for name, parameter in model.named_parameters():
+            #print(name)#, parameter.grad)
+            #print(np.sum(np.array(parameter.grad)))
 
+        # add to loss_sum and iter_count
         loss_sum += loss.item()
         iter_count += len(batch)
 
-        loss.backward()
-        optimizer.step()
-
+        # update learning rate by taking a step
         if isinstance(scheduler, NoamLR):
             scheduler.step()
 
+        # increment n_iter (total number of examples across epochs)
         n_iter += len(batch)
+        
+        # determine reporting frequency
+        if gp_switch:
+            batch_size = args.batch_size_gp
+        elif sgld_switch:
+            batch_size = args.batch_size_sgld
+        else:
+            batch_size = args.batch_size
+        
+        # determine log freq
+        if gp_switch:
+            log_frequency = args.log_frequency_gp
+        elif sgld_switch:
+            log_frequency = args.log_frequency_sgld
+        else:
+            log_frequency = args.log_frequency
 
         # Log and/or add to tensorboard
-        if (n_iter // args.batch_size) % args.log_frequency == 0:
+        if (n_iter // batch_size) % log_frequency == 0:
             lrs = scheduler.get_lr()
             pnorm = compute_pnorm(model)
             gnorm = compute_gnorm(model)
+            
+            ### they seem to report something funny here... check it out?
             loss_avg = loss_sum / iter_count
             loss_sum, iter_count = 0, 0
 
@@ -92,5 +198,29 @@ def train(model: nn.Module,
                 writer.add_scalar('gradient_norm', gnorm, n_iter)
                 for i, lr in enumerate(lrs):
                     writer.add_scalar(f'learning_rate_{i}', lr, n_iter)
+            
+            print('kl term')
+            print(Edkl)
+            print('data')
+            print(mlpdw)
+            
+        # SWAG update
+        if (swag_model is not None) and ((n_iter // args.batch_size) % args.c_swag == 0):
+            swag_model.collect_model(model)
 
     return n_iter
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

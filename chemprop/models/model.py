@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 from .mpn import MPN
@@ -34,8 +35,15 @@ class MoleculeModel(nn.Module):
 
         self.create_encoder(args)
         self.create_ffn(args)
-
+        
         initialize_weights(self)
+        
+        # create log noise parameter if we're running SGLD
+        # this must take place after initialize_weights
+        if args.sgld:
+            self.create_log_noise(args)
+
+        
 
     def create_encoder(self, args: TrainArgs):
         """
@@ -89,7 +97,13 @@ class MoleculeModel(nn.Module):
 
         # Create FFN model
         self.ffn = nn.Sequential(*ffn)
-
+        
+    def create_log_noise(self, args: TrainArgs):
+        """
+        Adds an additional parameter to the model to learn log noise.
+        """
+        self.log_noise = nn.Parameter(torch.ones(args.num_tasks)*args.init_log_noise_sgld)
+        
     def featurize(self, *input):
         """
         Computes feature vectors of the input by leaving out the last layer.

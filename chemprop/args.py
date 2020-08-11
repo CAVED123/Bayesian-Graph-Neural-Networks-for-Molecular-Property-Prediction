@@ -114,6 +114,72 @@ class CommonArgs(Tap):
 class TrainArgs(CommonArgs):
     """TrainArgs includes CommonArgs along with additional arguments used for training a chemprop model."""
 
+    ### chempropBayes arguments
+    
+    ensemble_size: int = 1  # Number of models in ensemble
+    samples: int = 1 # number of Bayesian samples
+    
+    dropout: float = 0.0  # Dropout probability
+    test_dropout: bool = False # True means dropout is enabled during prediction
+    dropout_FFNonly: bool = False # switch if we want to dropout FFN only    
+    
+    
+    # SWAG
+    swag: bool = False # SWAG switch
+    cov_mat: bool = False # whether to compute deviations and then covariance
+    block: bool = True # whether to compute covariances layer by layer
+    max_num_models: float = 0 # max number of columns of deviations matrix
+    
+    epochs_swag: int = 0 # number of epochs
+    c_swag: int = 0 # how frequently to collect a model (in batches)
+    
+    lr_swag: float = 1e-4
+    wd_swag: float = 0
+    momentum_swag: float = 0.9
+    
+    
+    
+    # SGLD
+    sgld: bool = False # switch for SGLD
+    init_log_noise_sgld: float = -2 # initial estimate of log sigma for learned parameter
+    
+    lr_sgld: float = 1e-4 # learning rate
+    weight_decay_sgld: float = 0
+    
+    batch_size_sgld: int = 50 # sgld batch size
+    log_frequency_sgld: int = 0 # reporting frequency for sgld
+    
+    burnin_epochs: int = 10
+    mix_epochs: int = 1
+    
+
+        
+    # GP
+    gp: bool = False
+    num_inducing_points: int = 2000
+    
+    batch_size_gp: int = 100
+    log_frequency_gp: int = 100
+    
+    epochs_gp: int = 100
+    warmup_epochs_gp: int = 4
+    unfreeze_epoch_gp: int = 50 # unfreeze featurizer weights after this many epochs
+    
+    init_lr_gp: float = 1e-4
+    max_lr_gp: float = 1e-3
+    final_lr_gp: float = 1e-4
+    
+    
+    
+    
+    # BBP
+    # note: uses standard data loaders / batch size args
+    
+    
+    
+    
+    
+    
     # General arguments
     data_path: str  # Path to data CSV file
     target_columns: List[str] = None  # Name of the columns containing target values. By default, uses all columns except the SMILES column.
@@ -144,7 +210,6 @@ class TrainArgs(CommonArgs):
     bias: bool = False  # Whether to add bias to linear layers
     hidden_size: int = 300  # Dimensionality of hidden layers in MPN
     depth: int = 3  # Number of message passing steps
-    dropout: float = 0.0  # Dropout probability
     activation: Literal['ReLU', 'LeakyReLU', 'PReLU', 'tanh', 'SELU', 'ELU'] = 'ReLU'  # Activation function
     atom_messages: bool = False  # Centers messages on atoms instead of on bonds
     undirected: bool = False  # Undirected edges (always sum the two relevant bond vectors)
@@ -154,7 +219,6 @@ class TrainArgs(CommonArgs):
     separate_val_features_path: List[str] = None  # Path to file with features for separate val set
     separate_test_features_path: List[str] = None  # Path to file with features for separate test set
     config_path: str = None  # Path to a .json file containing arguments. Any arguments present in the config file will override arguments specified via the command line or by the defaults.
-    ensemble_size: int = 1  # Number of models in ensemble
 
     # Training arguments
     epochs: int = 30  # Number of epochs to run
