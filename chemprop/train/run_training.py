@@ -190,7 +190,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
         
 
         # Ensure that model is saved in correct location for evaluation if 0 epochs
-        #save_checkpoint(os.path.join(save_dir, 'model.pt'), model, scaler, features_scaler, args)
+        save_checkpoint(os.path.join(save_dir, 'model.pt'), model, scaler, features_scaler, args)
 
         # Optimizers
         optimizer = build_optimizer(model, args)
@@ -202,7 +202,6 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
         best_score = float('inf') if args.minimize_score else -float('inf')
         best_epoch, n_iter = 0, 0
         for epoch in range(args.epochs):
-            break
             debug(f'Epoch {epoch}')
 
             n_iter = train(
