@@ -199,10 +199,10 @@ def train(model: nn.Module,
                 for i, lr in enumerate(lrs):
                     writer.add_scalar(f'learning_rate_{i}', lr, n_iter)
             
-            print('kl term')
-            print(Edkl)
-            print('data')
-            print(mlpdw)
+            #print('kl term')
+            #print(Edkl)
+            #print('data')
+            #print(mlpdw)
             
         # SWAG update
         if (swag_model is not None) and ((n_iter // args.batch_size) % args.c_swag == 0):
