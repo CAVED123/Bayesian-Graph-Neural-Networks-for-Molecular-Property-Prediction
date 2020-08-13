@@ -114,18 +114,29 @@ class CommonArgs(Tap):
 class TrainArgs(CommonArgs):
     """TrainArgs includes CommonArgs along with additional arguments used for training a chemprop model."""
 
-    ### chempropBayes arguments
-    
-    
+
+    ######################################################
+    ################### chempropBayes ####################
+
+
+    ensemble_size: int = 1
+    samples: int = 1
+
+
     # MAP
+    epochs: int = 30
     init_log_noise: float = -2
+    
+    warmup_epochs: float = 2.0
+    init_lr: float = 1e-4
+    max_lr: float = 1e-3
+    final_lr: float = 1e-4
+    weight_decay: float = 0
 
 
-    
-    
-    ensemble_size: int = 1  # Number of models in ensemble
-    samples: int = 1 # number of Bayesian samples
-    
+
+
+    # dropout
     dropout: float = 0.0  # Dropout probability
     test_dropout: bool = False # True means dropout is enabled during prediction
     dropout_FFNonly: bool = False # switch if we want to dropout FFN only    
@@ -180,9 +191,13 @@ class TrainArgs(CommonArgs):
     
     
     # BBP
-    # note: uses standard data loaders / batch size args
+    args.prior_sig_bbp = 1
+    args.bbp = False
     
     
+    
+    ######################################################
+    ######################################################
     
     
     
@@ -228,11 +243,6 @@ class TrainArgs(CommonArgs):
     config_path: str = None  # Path to a .json file containing arguments. Any arguments present in the config file will override arguments specified via the command line or by the defaults.
 
     # Training arguments
-    epochs: int = 30  # Number of epochs to run
-    warmup_epochs: float = 2.0  # Number of epochs during which learning rate increases linearly from init_lr to max_lr. Afterwards, learning rate decreases exponentially from max_lr to final_lr.
-    init_lr: float = 1e-4  # Initial learning rate
-    max_lr: float = 1e-3  # Maximum learning rate
-    final_lr: float = 1e-4  # Final learning rate
     class_balance: bool = False  # Trains with an equal number of positives and negatives in each batch (only for single task classification)
 
     def __init__(self, *args, **kwargs) -> None:
