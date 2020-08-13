@@ -57,7 +57,7 @@ def train(model: nn.Module,
     for batch in data_loader:
         # Prepare batch
         batch: MoleculeDataset
-        
+
         # .batch_graph() returns BatchMolGraph
         # .features() returns None if no additional features
         # .targets() returns list of lists of floats containing the targets
@@ -96,12 +96,7 @@ def train(model: nn.Module,
             elif sgld_switch:
                 loss = loss_func(preds, targets, torch.exp(model.log_noise))
             else:
-                if args.dataset_type == 'multiclass':
-                    targets = targets.long()
-                    loss = torch.cat([loss_func(preds[:, target_index, :], targets[:, target_index]).unsqueeze(1) for target_index in range(preds.size(1))], dim=1) * class_weights * mask
-                else:
-                    loss = loss_func(preds, targets) * class_weights * mask
-                loss = loss.sum() / mask.sum() # average per molecule per task   
+                loss = loss_func(preds, targets, torch.exp(model.log_noise))
         
         
         ### bbp non sample option
@@ -199,10 +194,7 @@ def train(model: nn.Module,
                 for i, lr in enumerate(lrs):
                     writer.add_scalar(f'learning_rate_{i}', lr, n_iter)
             
-            #print('kl term')
-            #print(Edkl)
-            #print('data')
-            #print(mlpdw)
+            print(model.log_noise)
             
         # SWAG update
         if (swag_model is not None) and ((n_iter // args.batch_size) % args.c_swag == 0):

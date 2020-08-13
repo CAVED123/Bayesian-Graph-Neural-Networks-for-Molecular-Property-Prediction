@@ -5,7 +5,6 @@ import numpy as np
 import torch
 import pickle
 import copy
-#import pandas as pd
 
 from logging import Logger
 from typing import List
@@ -41,6 +40,7 @@ args.from_dict({
 
 # location for model checkpoints to be saved
 args.save_dir = '/home/willlamb/chempropBayes/log'
+#args.checkpoint_paths = ['/home/willlamb/chempropBayes/log/model_0/model.pt']
 
 ### args (non-model)
 
@@ -54,14 +54,14 @@ args.features_generator = None
 
 # splitting data
 args.split_type = 'scaffold_balanced'
-args.split_sizes = (0.8, 0.1, 0.1)
+args.split_sizes = (0.64, 0.16, 0.2)
 
 # evaluation metric
 args.metric = 'mae'
 
 # epochs and logging
-args.epochs = 100
-args.log_frequency = 800
+args.epochs = 200
+args.log_frequency = 2000
 
 ### args (model)
 
@@ -84,14 +84,18 @@ args.activation = 'ReLU'
 
 
 
-#print('device')
-#print(args.device)
-
-
 
 
 args.ensemble_size = 1
 args.samples = 1
+args.init_log_noise = -2
+args.init_lr = 1e-5  # Initial learning rate
+args.max_lr= 1e-5  # Maximum learning rate
+args.final_lr= 1e-5  # Final learning rate
+
+
+
+
 args.prior_sig_bbp = 1
 args.bbp = False
 
