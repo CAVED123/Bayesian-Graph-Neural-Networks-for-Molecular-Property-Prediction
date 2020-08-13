@@ -26,6 +26,9 @@ from chemprop.nn_utils import param_count
 from chemprop.utils import build_optimizer, build_lr_scheduler, get_loss_func, get_metric_func, load_checkpoint,\
     makedirs, save_checkpoint, save_smiles_splits
 from chemprop.bayes import data_loss_bbp
+from chemprop.bayes_utils import neg_log_like
+
+
 
 def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
     """
@@ -100,7 +103,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
         scaler = None
 
     # Get loss and metric functions
-    loss_func = data_loss_bbp
+    loss_func = neg_log_like
     metric_func = get_metric_func(metric=args.metric)
 
     # Set up test set evaluation
@@ -173,7 +176,11 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
         save_checkpoint(os.path.join(save_dir, 'model.pt'), model, scaler, features_scaler, args)
 
         # Optimizers
-        optimizer = build_optimizer(model, args)
+        optimizer = Adam([
+            {'params': model.encoder.parameters()},
+            {'params': model.ffn.parameters()},
+            {'params': model.log_noise, 'weight_decay': 0}
+            ], lr=args.init_lr, weight_decay=args.weight_decay)
 
         # Learning rate schedulers
         scheduler = build_lr_scheduler(optimizer, args)
