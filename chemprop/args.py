@@ -116,6 +116,13 @@ class TrainArgs(CommonArgs):
 
     ### chempropBayes arguments
     
+    
+    # MAP
+    init_log_noise: float = -2
+
+
+    
+    
     ensemble_size: int = 1  # Number of models in ensemble
     samples: int = 1 # number of Bayesian samples
     

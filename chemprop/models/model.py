@@ -40,8 +40,7 @@ class MoleculeModel(nn.Module):
         
         # create log noise parameter if we're running SGLD
         # this must take place after initialize_weights
-        if args.sgld:
-            self.create_log_noise(args)
+        self.create_log_noise(args)
 
         
 
@@ -102,7 +101,7 @@ class MoleculeModel(nn.Module):
         """
         Adds an additional parameter to the model to learn log noise.
         """
-        self.log_noise = nn.Parameter(torch.ones(args.num_tasks)*args.init_log_noise_sgld)
+        self.log_noise = nn.Parameter(torch.ones(args.num_tasks)*args.init_log_noise)
         
     def featurize(self, *input):
         """
