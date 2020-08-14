@@ -121,7 +121,7 @@ class TrainArgs(CommonArgs):
 
     ensemble_size: int = 1
     samples: int = 1
-
+    wandb_name: str = 'MAP'
 
     # MAP
     epochs: int = 30

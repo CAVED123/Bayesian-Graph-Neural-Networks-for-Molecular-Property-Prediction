@@ -11,6 +11,7 @@ from tqdm import trange
 import pickle
 from torch.optim.lr_scheduler import ExponentialLR
 from torch.optim import Adam
+import wandb
 
 from .evaluate import evaluate, evaluate_predictions
 from .predict import predict
@@ -39,6 +40,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
     :param logger: Logger.
     :return: A list of ensemble scores for each task.
     """
+    
     if logger is not None:
         debug, info = logger.debug, logger.info
     else:
@@ -172,6 +174,8 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
             debug('Moving model to cuda')
         model = model.to(args.device)
         
+        # start wandb run
+        wandb.init(project='chempropBayes', name=args.wandb_name+'_'+str(model_idx))
 
         # Ensure that model is saved in correct location for evaluation if 0 epochs
         save_checkpoint(os.path.join(save_dir, 'model.pt'), model, scaler, features_scaler, args)
@@ -220,6 +224,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
             avg_val_score = np.nanmean(val_scores)
             debug(f'Validation {args.metric} = {avg_val_score:.6f}')
             writer.add_scalar(f'validation_{args.metric}', avg_val_score, n_iter)
+            wandb.log({"Validation MAE": avg_val_score})
 
             if args.show_individual_scores:
                 # Individual validation scores
