@@ -7,6 +7,7 @@ import torch.nn as nn
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 from tqdm import tqdm
+import wandb
 
 from chemprop.args import TrainArgs
 from chemprop.data import MoleculeDataLoader, MoleculeDataset
@@ -51,7 +52,7 @@ def train(model: nn.Module,
     model.train()
     if likelihood is not None:
         likelihood.train()
-    loss_sum, iter_count = 0, 0
+    loss_sum, loss_count = 0, 0
 
     #for batch in tqdm(data_loader, total=len(data_loader)):
     for batch in data_loader:
@@ -149,7 +150,7 @@ def train(model: nn.Module,
 
         # add to loss_sum and iter_count
         loss_sum += loss.item()
-        iter_count += len(batch)
+        loss_count += 1
 
         # update learning rate by taking a step
         if isinstance(scheduler, NoamLR):
@@ -181,20 +182,13 @@ def train(model: nn.Module,
             gnorm = compute_gnorm(model)
             
             ### they seem to report something funny here... check it out?
-            loss_avg = loss_sum / iter_count
-            loss_sum, iter_count = 0, 0
+            loss_avg = loss_sum / loss_count
+            loss_sum, loss_count = 0, 0
 
             lrs_str = ', '.join(f'lr_{i} = {lr:.4e}' for i, lr in enumerate(lrs))
             debug(f'Loss = {loss_avg:.4e}, PNorm = {pnorm:.4f}, GNorm = {gnorm:.4f}, {lrs_str}')
+            wandb.log({"Negative log likelihood (scaled)": loss_avg}, commit=False)
 
-            if writer is not None:
-                writer.add_scalar('train_loss', loss_avg, n_iter)
-                writer.add_scalar('param_norm', pnorm, n_iter)
-                writer.add_scalar('gradient_norm', gnorm, n_iter)
-                for i, lr in enumerate(lrs):
-                    writer.add_scalar(f'learning_rate_{i}', lr, n_iter)
-            
-            print(model.log_noise)
             
         # SWAG update
         if (swag_model is not None) and ((n_iter // args.batch_size) % args.c_swag == 0):
