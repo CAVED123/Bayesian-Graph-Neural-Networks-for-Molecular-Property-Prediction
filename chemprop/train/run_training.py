@@ -10,6 +10,7 @@ import torch
 from tqdm import trange
 import pickle
 from torch.optim.lr_scheduler import ExponentialLR
+from torch.optim import Adam
 
 from .evaluate import evaluate, evaluate_predictions
 from .predict import predict

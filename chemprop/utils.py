@@ -295,15 +295,15 @@ def build_lr_scheduler(optimizer: Optimizer, args: TrainArgs, total_epochs: List
     :param total_epochs: The total number of epochs for which the model will be run.
     :return: An initialized learning rate scheduler.
     """
-    # Learning rate scheduler 
+    num_param_groups = len(optimizer.param_groups)
     return NoamLR(
         optimizer=optimizer,
-        warmup_epochs=[args.warmup_epochs],
-        total_epochs=total_epochs or [args.epochs] * args.num_lrs,
+        warmup_epochs=[args.warmup_epochs] * num_param_groups,
+        total_epochs=[args.epochs] * num_param_groups,
         steps_per_epoch=args.train_data_size // args.batch_size,
-        init_lr=[args.init_lr],
-        max_lr=[args.max_lr],
-        final_lr=[args.final_lr]
+        init_lr=[args.init_lr] * num_param_groups,
+        max_lr=[args.max_lr] * num_param_groups,
+        final_lr=[args.final_lr] * num_param_groups
     )
 
 

@@ -191,8 +191,8 @@ class TrainArgs(CommonArgs):
     
     
     # BBP
-    args.prior_sig_bbp = 1
-    args.bbp = False
+    prior_sig_bbp = 1
+    bbp = False
     
     
     
