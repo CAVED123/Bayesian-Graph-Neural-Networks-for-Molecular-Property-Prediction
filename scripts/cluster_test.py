@@ -20,7 +20,7 @@ args.from_dict({
 
 # args (general)
 args.seed = 0
-args.max_data_size = 75000
+args.max_data_size = 140000
 args.features_path = None
 args.features_generator = None
 args.split_type = 'scaffold_balanced'
@@ -42,7 +42,7 @@ args.save_dir = '/home/willlamb/chempropBayes/log'
 args.ensemble_size = 1
 args.samples = 1
 args.epochs = 10
-args.log_frequency = 960
+args.log_frequency = 1664
 args.init_log_noise = -2
 args.init_lr = 1e-4 # Initial learning rate
 args.max_lr= 1e-3 # Maximum learning rate

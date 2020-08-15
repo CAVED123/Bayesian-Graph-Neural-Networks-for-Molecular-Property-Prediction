@@ -176,7 +176,10 @@ def train(model: nn.Module,
             log_frequency = args.log_frequency
 
         # Log and/or add to tensorboard
-        if (n_iter // batch_size) % log_frequency == 0:
+        #if (n_iter // batch_size) % log_frequency == 0:
+            
+        # per epoch reporting
+        if n_iter % args.train_data_size == 0:
             lrs = scheduler.get_lr()
             pnorm = compute_pnorm(model)
             gnorm = compute_gnorm(model)
