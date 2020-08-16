@@ -119,81 +119,70 @@ class TrainArgs(CommonArgs):
     ################### chempropBayes ####################
 
 
-    ensemble_size: int = 1
-    samples: int = 1
-    wandb_name: str = 'MAP'
+    save_dir = '/Users/georgelamb/Documents/checkpoints/map'
+    results_dir = '/Users/georgelamb/Documents/results/map'
+    wandb_proj = 'practice'
+    wandb_name = 'map'
+    ensemble_size = 5
+    pytorch_seeds = [0,1,2,3,4]
+    samples = 30
 
     # MAP
-    epochs: int = 30
-    init_log_noise: float = -2
-    
     warmup_epochs: float = 2.0
+    noam_epochs: int = 100
+    epochs: int = 200
+
     init_lr: float = 1e-4
     max_lr: float = 1e-3
     final_lr: float = 1e-4
-    weight_decay: float = 0
-
-
-
+    
+    init_log_noise: float = -2
+    weight_decay: float = 0.01
 
     # dropout
-    dropout: float = 0.0  # Dropout probability
-    test_dropout: bool = False # True means dropout is enabled during prediction
-    dropout_FFNonly: bool = False # switch if we want to dropout FFN only    
+    dropout_mpnn: float = 0
+    dropout_ffn: float = 0
+    test_dropout: bool = False  
     
-    
+
+
+
     # SWAG
     swag: bool = False # SWAG switch
     cov_mat: bool = False # whether to compute deviations and then covariance
     block: bool = True # whether to compute covariances layer by layer
     max_num_models: float = 0 # max number of columns of deviations matrix
-    
     epochs_swag: int = 0 # number of epochs
     c_swag: int = 0 # how frequently to collect a model (in batches)
-    
     lr_swag: float = 1e-4
     wd_swag: float = 0
     momentum_swag: float = 0.9
     
-    
-    
     # SGLD
     sgld: bool = False # switch for SGLD
     init_log_noise_sgld: float = -2 # initial estimate of log sigma for learned parameter
-    
     lr_sgld: float = 1e-4 # learning rate
     weight_decay_sgld: float = 0
-    
     batch_size_sgld: int = 50 # sgld batch size
     log_frequency_sgld: int = 0 # reporting frequency for sgld
-    
     burnin_epochs: int = 10
     mix_epochs: int = 1
-    
 
-        
     # GP
     gp: bool = False
     num_inducing_points: int = 2000
-    
     batch_size_gp: int = 100
     log_frequency_gp: int = 100
-    
     epochs_gp: int = 100
     warmup_epochs_gp: int = 4
     unfreeze_epoch_gp: int = 50 # unfreeze featurizer weights after this many epochs
-    
     init_lr_gp: float = 1e-4
     max_lr_gp: float = 1e-3
     final_lr_gp: float = 1e-4
     
-    
-    
-    
     # BBP
     prior_sig_bbp = 1
     bbp = False
-    
     
     
     ######################################################
@@ -218,7 +207,6 @@ class TrainArgs(CommonArgs):
     crossval_index_dir: str = None  # Directory in which to find cross validation index files
     crossval_index_file: str = None  # Indices of files to use as train/val/test. Overrides --num_folds and --seed.
     seed: int = 0  # Random seed to use when splitting data into train/val/test sets. When `num_folds` > 1, the first fold uses this seed and all subsequent folds add 1 to the seed.
-    pytorch_seed: int = 0  # Seed for PyTorch randomness (e.g. random initial weights)
     metric: Literal['auc', 'prc-auc', 'rmse', 'mae', 'mse', 'r2', 'accuracy', 'cross_entropy'] = None  # Metric to use during evaluation. Defaults to "auc" for classification and "rmse" for regression.
     save_dir: str = None  # Directory where model checkpoints will be saved
     save_smiles_splits: bool = False  # Save smiles for each train/val/test splits for prediction convenience later

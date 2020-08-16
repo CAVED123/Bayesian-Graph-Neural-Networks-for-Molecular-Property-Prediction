@@ -299,7 +299,7 @@ def build_lr_scheduler(optimizer: Optimizer, args: TrainArgs, total_epochs: List
     return NoamLR(
         optimizer=optimizer,
         warmup_epochs=[args.warmup_epochs] * num_param_groups,
-        total_epochs=[args.epochs] * num_param_groups,
+        total_epochs=[args.noam_epochs] * num_param_groups,
         steps_per_epoch=args.train_data_size // args.batch_size,
         init_lr=[args.init_lr] * num_param_groups,
         max_lr=[args.max_lr] * num_param_groups,

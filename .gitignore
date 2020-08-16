@@ -10,3 +10,5 @@ chemprop.egg-info
 *.log
 *.npz
 *.local
+*.jsonl
+*.yaml

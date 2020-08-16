@@ -5,7 +5,6 @@ import sys
 from typing import List
 
 import numpy as np
-from tensorboardX import SummaryWriter
 import torch
 from tqdm import trange
 import pickle
@@ -28,7 +27,7 @@ from chemprop.nn_utils import param_count
 from chemprop.utils import build_optimizer, build_lr_scheduler, get_loss_func, get_metric_func, load_checkpoint,\
     makedirs, save_checkpoint, save_smiles_splits
 from chemprop.bayes import data_loss_bbp
-from chemprop.bayes_utils import neg_log_like
+from chemprop.bayes_utils import neg_log_like, scheduler_const
 
 
 
@@ -40,25 +39,17 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
     :param logger: Logger.
     :return: A list of ensemble scores for each task.
     """
-    
-    if logger is not None:
-        debug, info = logger.debug, logger.info
-    else:
-        debug = info = print
 
-    # Print command line
+    debug = info = print
+
+    # Print command line and args
     debug('Command line')
     debug(f'python {" ".join(sys.argv)}')
-
-    # Print args
     debug('Args')
     debug(args)
 
     # Save args
     args.save(os.path.join(args.save_dir, 'args.json'))
-
-    # Set pytorch seed for random initial weights
-    torch.manual_seed(args.pytorch_seed)
 
     # Get data
     debug('Loading data')
@@ -68,20 +59,9 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
     args.features_size = data.features_size()
     debug(f'Number of tasks = {args.num_tasks}')
 
-
-
     # Split data
     debug(f'Splitting data with seed {args.seed}')
     train_data, val_data, test_data = split_data(data=data, split_type=args.split_type, sizes=args.split_sizes, seed=args.seed, args=args, logger=logger)
-
-    if args.save_smiles_splits:
-        save_smiles_splits(
-            train_data=train_data,
-            val_data=val_data,
-            test_data=test_data,
-            data_path=args.data_path,
-            save_dir=args.save_dir
-        )
 
     if args.features_scaling:
         features_scaler = train_data.normalize_features(replace_nan_token=0)
@@ -151,14 +131,29 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
     ###########################################
     
     for model_idx in range(args.ensemble_size):
+
+        # Set pytorch seed for random initial weights
+        torch.manual_seed(args.pytorch_seeds[model_idx])
         
-        # Tensorboard writer
+
+        ######## set up all logging ########
+        # make save_dir
         save_dir = os.path.join(args.save_dir, f'model_{model_idx}')
         makedirs(save_dir)
-        try:
-            writer = SummaryWriter(log_dir=save_dir)
-        except:
-            writer = SummaryWriter(logdir=save_dir)
+
+        # make results_dir
+        results_dir = os.path.join(args.results_dir, f'model_{model_idx}')
+        makedirs(results_dir)
+
+        # initialise wandb
+        if model_idx > 0:
+            wandb.join()
+        wandb.init(
+            name=args.wandb_name+'_'+str(model_idx),
+            project=args.wandb_proj,
+            reinit=True)
+        ####################################
+
 
         # Load/build model
         if args.checkpoint_paths is not None:
@@ -174,20 +169,17 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
             debug('Moving model to cuda')
         model = model.to(args.device)
         
-        # start wandb run
-        wandb.init(project='chempropBayes', name=args.wandb_name+'_'+str(model_idx))
-
         # Ensure that model is saved in correct location for evaluation if 0 epochs
         save_checkpoint(os.path.join(save_dir, 'model.pt'), model, scaler, features_scaler, args)
 
-        # Optimizers
+        # Optimizer
         optimizer = Adam([
             {'params': model.encoder.parameters()},
             {'params': model.ffn.parameters()},
             {'params': model.log_noise, 'weight_decay': 0}
             ], lr=args.init_lr, weight_decay=args.weight_decay)
 
-        # Learning rate schedulers
+        # Learning rate scheduler
         scheduler = build_lr_scheduler(optimizer, args)
 
         # Run training
@@ -204,11 +196,8 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
                 scheduler=scheduler,
                 args=args,
                 n_iter=n_iter,
-                logger=logger,
-                writer=writer
+                logger=logger
             )
-            if isinstance(scheduler, ExponentialLR):
-                scheduler.step()
             val_scores = evaluate(
                 model=model,
                 data_loader=val_data_loader,
@@ -223,21 +212,22 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
             # Average validation score
             avg_val_score = np.nanmean(val_scores)
             debug(f'Validation {args.metric} = {avg_val_score:.6f}')
-            writer.add_scalar(f'validation_{args.metric}', avg_val_score, n_iter)
             wandb.log({"Validation MAE": avg_val_score})
-
-            if args.show_individual_scores:
-                # Individual validation scores
-                for task_name, val_score in zip(args.task_names, val_scores):
-                    debug(f'Validation {task_name} {args.metric} = {val_score:.6f}')
-                    writer.add_scalar(f'validation_{task_name}_{args.metric}', val_score, n_iter)
 
             # Save model checkpoint if improved validation score
             if args.minimize_score and avg_val_score < best_score or \
                     not args.minimize_score and avg_val_score > best_score:
                 best_score, best_epoch = avg_val_score, epoch
-                save_checkpoint(os.path.join(save_dir, 'model.pt'), model, scaler, features_scaler, args)        
+                save_checkpoint(os.path.join(save_dir, 'model.pt'), model, scaler, features_scaler, args)
 
+            if epoch == args.noam_epochs - 1:
+                optimizer = Adam([
+                    {'params': model.encoder.parameters()},
+                    {'params': model.ffn.parameters()},
+                    {'params': model.log_noise, 'weight_decay': 0}
+                    ], lr=args.final_lr, weight_decay=args.weight_decay)
+
+                scheduler = scheduler_const(args.final_lr)
         
         # load model with best validation score
         info(f'Model {model_idx} best validation {args.metric} = {best_score:.6f} on epoch {best_epoch}')
@@ -330,6 +320,15 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
                 test_data=True,
                 bbp_sample=True
             )
+
+            # save test_preds and aleatoric uncertainties
+            noise = np.exp(model.log_noise.detach().numpy()) * np.array(scaler.stds)
+            np.savez(os.path.join(results_dir, f'preds_{sample_idx}'), np.array(test_preds))
+            np.savez(os.path.join(results_dir, f'noise_{sample_idx}'), noise)
+
+            # add predictions to sum_test_preds
+            if len(test_preds) != 0:
+                sum_test_preds += np.array(test_preds)
             
             # evaluate predictions using metric function
             test_scores = evaluate_predictions(
@@ -339,32 +338,17 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
                 metric_func=metric_func,
                 dataset_type=args.dataset_type,
                 logger=logger
-            )   
-            
-            
-            
-            # add predictions to sum_test_preds
-            if len(test_preds) != 0:
-                sum_test_preds += np.array(test_preds)
+            )
     
             # compute average test score
             avg_test_score = np.nanmean(test_scores)
             info(f'Model {model_idx}, sample {sample_idx} test {args.metric} = {avg_test_score:.6f}')
-            writer.add_scalar(f'test_{args.metric}', avg_test_score, 0)
-    
-            # show individual test scores
-            if args.show_individual_scores:
-                for task_name, test_score in zip(args.task_names, test_scores):
-                    info(f'Model {model_idx}, sample {sample_idx} test {task_name} {args.metric} = {test_score:.6f}')
-                    writer.add_scalar(f'test_{task_name}_{args.metric}', test_score, n_iter)
-            writer.close()
 
 
 
     #################################
     ########## Bayesian Model Average
     #################################
-    
     # note: this may be an average of Bayesian samples and/or components in an ensemble
             
     # compute number of prediction iterations
@@ -386,11 +370,6 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
     # average scores across tasks
     avg_BMA_test_score = np.nanmean(BMA_scores)
     info(f'BMA test {args.metric} = {avg_BMA_test_score:.6f}')
-
-    # individual scores
-    if args.show_individual_scores:
-        for task_name, BMA_score in zip(args.task_names, BMA_scores):
-            info(f'BMA test {task_name} {args.metric} = {BMA_score:.6f}')
 
     return BMA_scores
 
