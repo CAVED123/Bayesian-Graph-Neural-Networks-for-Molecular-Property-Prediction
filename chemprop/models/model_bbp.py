@@ -27,8 +27,7 @@ class MoleculeModelBBP(nn.Module):
         ######### ENCODER
         self.encoder = MPN(args, bbp=True)
                         
-        ######### DROPOUT AND ACTIVATION LAYERS      
-        self.dropout_layer = nn.Dropout(p=args.dropout)
+        ######### ACTIVATION LAYER
         self.act_func = get_activation_function(args.activation)
 
 
@@ -67,7 +66,6 @@ class MoleculeModelBBP(nn.Module):
         
         # if single layer
         if self.ffn_num_layers == 1:
-            X = self.dropout_layer(X)
             output, kl = self.layer_single(X, sample)
             tkl += kl
         
@@ -75,26 +73,22 @@ class MoleculeModelBBP(nn.Module):
         else:    
             
             # initial layer
-            X = self.dropout_layer(X)
             X, kl = self.layer_in(X, sample)
             tkl += kl
             
             # hidden layers
             if self.ffn_num_layers > 2:
                 X = self.act_func(X)
-                X = self.dropout_layer(X)
                 X, kl = self.layer_hid_1(X, sample)
                 tkl += kl
                 
             if self.ffn_num_layers > 3:
                 X = self.act_func(X)
-                X = self.dropout_layer(X)
                 X, kl = self.layer_hid_2(X, sample)
                 tkl += kl
                 
             # output layer
             X = self.act_func(X)
-            X = self.dropout_layer(X)  
             output, kl = self.layer_out(X, sample)
             tkl += kl
         

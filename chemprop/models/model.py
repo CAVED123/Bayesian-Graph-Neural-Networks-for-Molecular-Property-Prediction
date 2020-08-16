@@ -68,7 +68,7 @@ class MoleculeModel(nn.Module):
             if args.use_input_features:
                 first_linear_dim += args.features_size
 
-        dropout = nn.Dropout(args.dropout)
+        dropout = nn.Dropout(args.dropout_ffn)
         activation = get_activation_function(args.activation)
 
         # Create FFN layers

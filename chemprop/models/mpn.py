@@ -29,21 +29,20 @@ class MPNEncoder(nn.Module):
         self.hidden_size = args.hidden_size
         self.bias = args.bias
         self.depth = args.depth
-        self.dropout = args.dropout
         self.layers_per_message = 1
         self.undirected = args.undirected
         self.features_only = args.features_only
         self.use_input_features = args.use_input_features
         self.device = args.device
-        self.dropout_FFNonly = args.dropout_FFNonly
         self.bbp = bbp
         self.prior_sig = args.prior_sig_bbp
+        self.dropout_mpnn = args.dropout_mpnn
 
         if self.features_only:
             return
 
         # Dropout
-        self.dropout_layer = nn.Dropout(p=self.dropout)
+        self.dropout_layer = nn.Dropout(p=self.dropout_mpnn)
 
         # Activation
         self.act_func = get_activation_function(args.activation)
@@ -145,8 +144,7 @@ class MPNEncoder(nn.Module):
                     tkl += kl # ONLY ADD ON KL LOSS ONCE
             
             message = self.act_func(input + message)  # num_bonds x hidden_size
-            if not self.dropout_FFNonly:
-                message = self.dropout_layer(message)  # num_bonds x hidden
+            message = self.dropout_layer(message)  # num_bonds x hidden
             ##########################################
         
         
@@ -168,8 +166,7 @@ class MPNEncoder(nn.Module):
             tkl += kl
                 
         atom_hiddens = self.act_func(atom_hiddens)  # num_atoms x hidden
-        if not self.dropout_FFNonly:
-            atom_hiddens = self.dropout_layer(atom_hiddens)  # num_atoms x hidden
+        atom_hiddens = self.dropout_layer(atom_hiddens)  # num_atoms x hidden
         #########################################
         
         
