@@ -322,7 +322,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
             )
 
             # save test_preds and aleatoric uncertainties
-            noise = np.exp(model.log_noise.detach().numpy()) * np.array(scaler.stds)
+            noise = np.exp(model.log_noise.detach().cpu().numpy()) * np.array(scaler.stds)
             np.savez(os.path.join(results_dir, f'preds_{sample_idx}'), np.array(test_preds))
             np.savez(os.path.join(results_dir, f'noise_{sample_idx}'), noise)
 

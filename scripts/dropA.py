@@ -19,7 +19,7 @@ from chemprop.train.run_training import run_training
 args = TrainArgs()
 args.from_dict({
     'dataset_type': 'regression',
-    'data_path': '/Users/georgelamb/Documents/GitHub/chempropBayes/data/QM9.csv'
+    'data_path': '/home/willlamb/chempropBayes/data/qm9.csv'
 })
 
 
@@ -39,7 +39,7 @@ args.undirected = False
 args.bias = False
 
 # data
-args.max_data_size = 50000 # full data set
+args.max_data_size = 150000 # full data set
 args.seed = 0 # seed for data splits
 args.split_type = 'scaffold_balanced'
 args.split_sizes = (0.64, 0.16, 0.2)
@@ -50,22 +50,22 @@ args.metric = 'mae'
 ################################################
 
 # names and directories
-args.save_dir = '/Users/georgelamb/Documents/checkpoints/dropA'
-args.results_dir = '/Users/georgelamb/Documents/results/dropA'
-args.wandb_proj = 'chris'
+args.save_dir = '/home/willlamb/checkpoints/dropA'
+args.results_dir = '/home/willlamb/results/dropA'
+args.wandb_proj = 'rocket'
 args.wandb_name = 'dropA'
 
 # ensembling
-args.ensemble_size = 3
-args.pytorch_seeds = [0,1,2]
+args.ensemble_size = 5
+args.pytorch_seeds = [0,1,2,3,4]
 
 # samples
 args.samples = 30
 
 ### dropA ###
-args.warmup_epochs = 1.0
-args.noam_epochs = 2
-args.epochs = 3
+args.warmup_epochs = 2.0
+args.noam_epochs = 100
+args.epochs = 350
 
 args.init_lr = 1e-4
 args.max_lr = 1e-3
