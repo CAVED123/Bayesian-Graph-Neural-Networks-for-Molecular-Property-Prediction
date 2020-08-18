@@ -56,8 +56,8 @@ args.wandb_proj = 'rocket'
 args.wandb_name = 'map'
 
 # ensembling
-args.ensemble_size = 5
-args.pytorch_seeds = [0,1,2,3,4]
+args.ensemble_size = 10
+args.pytorch_seeds = [0,1,2,3,4,5,6,7,8,9]
 
 # samples
 args.samples = 1
