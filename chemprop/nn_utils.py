@@ -177,7 +177,7 @@ class NoamLR(_LRScheduler):
 
         super(NoamLR, self).__init__(optimizer)
 
-    def get_lr(self) -> List[float]:
+    def get_last_lr(self) -> List[float]:
         """Gets a list of the current learning rates."""
         return list(self.lr)
 
