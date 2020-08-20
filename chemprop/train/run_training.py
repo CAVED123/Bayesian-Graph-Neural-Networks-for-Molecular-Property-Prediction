@@ -9,16 +9,12 @@ import torch
 from tqdm import trange
 import pickle
 from torch.optim.lr_scheduler import ExponentialLR
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 import wandb
 
 from .evaluate import evaluate, evaluate_predictions
 from .predict import predict
 from .train import train
-from .swag_tr import train_swag
-from .sgld_tr import train_sgld
-from .gp_tr import train_gp
-from .bbp_tr import train_bbp
 from chemprop.args import TrainArgs
 from chemprop.data import StandardScaler, MoleculeDataLoader
 from chemprop.data.utils import get_class_sizes, get_data, get_task_names, split_data
@@ -28,6 +24,11 @@ from chemprop.utils import build_optimizer, build_lr_scheduler, get_loss_func, g
     makedirs, save_checkpoint, save_smiles_splits
 from chemprop.bayes import data_loss_bbp
 from chemprop.bayes_utils import neg_log_like, scheduler_const
+
+from .bayes_tr.swag_tr import train_swag
+from .bayes_tr.sgld_tr import train_sgld
+from .bayes_tr.gp_tr import train_gp
+from .bayes_tr.bbp_tr import train_bbp
 
 
 
@@ -130,7 +131,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
     ########## Outer loop over ensemble members
     ###########################################
     
-    for model_idx in range(args.ensemble_size):
+    for model_idx in range(args.ensemble_start_idx, args.ensemble_start_idx + args.ensemble_size):
 
         # Set pytorch seed for random initial weights
         torch.manual_seed(args.pytorch_seeds[model_idx])
@@ -156,9 +157,9 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
 
 
         # Load/build model
-        if args.checkpoint_paths is not None:
-            debug(f'Loading model {model_idx} from {args.checkpoint_paths[model_idx]}')
-            model = load_checkpoint(args.checkpoint_paths[model_idx], logger=logger)
+        if args.checkpoint_path is not None:
+            debug(f'Loading model {model_idx} from {args.checkpoint_path}')
+            model = load_checkpoint(args.checkpoint_path + f'/model_{model_idx}/model.pt', device=args.device, logger=logger)
         else:
             debug(f'Building model {model_idx}')
             model = MoleculeModel(args)
@@ -173,7 +174,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
         save_checkpoint(os.path.join(save_dir, 'model.pt'), model, scaler, features_scaler, args)
 
         # Optimizer
-        optimizer = Adam([
+        optimizer = SGD([
             {'params': model.encoder.parameters()},
             {'params': model.ffn.parameters()},
             {'params': model.log_noise, 'weight_decay': 0}
@@ -238,28 +239,31 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
         if args.swag:
             model = train_swag(
                 model,
-                train_data_loader,
-                val_data_loader,
+                train_data,
+                val_data,
+                num_workers,
+                cache,
                 loss_func,
                 metric_func,
+                scaler,
+                features_scaler,
                 args,
-                scaler)
-        
+                save_dir)
+
         # SGLD loop, which saves nets
         if args.sgld:
-            save_dir_sgld = os.path.join(save_dir, 'SGLD_models')
-            makedirs(save_dir_sgld)
             model = train_sgld(
                 model,
                 train_data,
                 val_data,
                 num_workers,
                 cache,
+                loss_func,
                 metric_func,
                 scaler,
                 features_scaler,
                 args,
-                save_dir_sgld)
+                save_dir)
         
         # GP loop
         if args.gp:
@@ -308,8 +312,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
             
             # draw model from collected SGLD models
             if args.sgld:
-                model = load_checkpoint(os.path.join(save_dir_sgld, f'model_{sample_idx}.pt'), device=args.device, logger=logger)
-            
+                model = load_checkpoint(os.path.join(save_dir, f'model_{sample_idx}.pt'), device=args.device, logger=logger)
             
             # make predictions
             test_preds = predict(
@@ -322,7 +325,11 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
             )
 
             # save test_preds and aleatoric uncertainties
-            noise = np.exp(model.log_noise.detach().cpu().numpy()) * np.array(scaler.stds)
+            if args.swag:
+                log_noise = model.base.log_noise
+            else:
+                log_noise = model.log_noise
+            noise = np.exp(log_noise.detach().cpu().numpy()) * np.array(scaler.stds)
             np.savez(os.path.join(results_dir, f'preds_{sample_idx}'), np.array(test_preds))
             np.savez(os.path.join(results_dir, f'noise_{sample_idx}'), noise)
 
@@ -349,7 +356,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
     #################################
     ########## Bayesian Model Average
     #################################
-    # note: this may be an average of Bayesian samples and/or components in an ensemble
+    # note: this is an average over Bayesian samples AND components in an ensemble
             
     # compute number of prediction iterations
     pred_iterations = args.ensemble_size * args.samples

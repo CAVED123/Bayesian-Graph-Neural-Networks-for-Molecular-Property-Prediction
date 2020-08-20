@@ -37,8 +37,8 @@ def swag_parameters(module, params, no_cov_mat=True):
             )
 
         # append to list of SWAG parameters
-        # HAVE INSERTED A HACK HERE TO COPE WITH CACHED_ZERO_VECTOR
-        if name == 'cached_zero_vector':
+        # HAVE INSERTED A HACK HERE TO COPE WITH CACHED_ZERO_VECTOR AND LOG_NOISE
+        if name == 'cached_zero_vector' or name == 'log_noise':
             params.insert(0,(module, name))    
         else:
             params.append((module, name))
@@ -74,7 +74,6 @@ class SWAG(torch.nn.Module):
             )
         )
         
-
     
     def forward(self, *input):
         return self.base(*input)
@@ -195,9 +194,10 @@ class SWAG(torch.nn.Module):
         samples_list = unflatten_like(sample, mean_list)
 
         for (module, name), sample in zip(self.params, samples_list):
-            module.__setattr__(name, sample)
-                               # fix later
-
+            if args.cuda:
+                module.__setattr__(name, sample.cuda())
+            else:
+                module.__setattr__(name, sample)
 
 
 

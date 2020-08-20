@@ -123,19 +123,20 @@ class TrainArgs(CommonArgs):
     results_dir = '/Users/georgelamb/Documents/results/map'
     wandb_proj = 'practice'
     wandb_name = 'map'
-    ensemble_size = 5
-    pytorch_seeds = [0,1,2,3,4]
+    checkpoint_path = None
+    
+    ensemble_size: int = 5
+    ensemble_start_idx: int = 0
+    pytorch_seeds = [0,1,2,3,4,5,6,7,8,9]
     samples = 30
 
     # MAP
     warmup_epochs: float = 2.0
     noam_epochs: int = 100
     epochs: int = 200
-
     init_lr: float = 1e-4
     max_lr: float = 1e-3
     final_lr: float = 1e-4
-    
     init_log_noise: float = -2
     weight_decay: float = 0.01
 
@@ -144,29 +145,31 @@ class TrainArgs(CommonArgs):
     dropout_ffn: float = 0
     test_dropout: bool = False  
     
-
-
-
     # SWAG
-    swag: bool = False # SWAG switch
-    cov_mat: bool = False # whether to compute deviations and then covariance
-    block: bool = True # whether to compute covariances layer by layer
-    max_num_models: float = 0 # max number of columns of deviations matrix
-    epochs_swag: int = 0 # number of epochs
-    c_swag: int = 0 # how frequently to collect a model (in batches)
+    swag: bool = False
+    batch_size_swag: int = 50
     lr_swag: float = 1e-4
-    wd_swag: float = 0
-    momentum_swag: float = 0.9
+    weight_decay_swag: float = 0.01
+    momentum_swag: float = 0
+    burnin_swag: int = 20
+    epochs_swag: int = 200
+    cov_mat: bool = True
+    max_num_models: int = 20
+    block: bool = False
     
     # SGLD
-    sgld: bool = False # switch for SGLD
-    init_log_noise_sgld: float = -2 # initial estimate of log sigma for learned parameter
-    lr_sgld: float = 1e-4 # learning rate
-    weight_decay_sgld: float = 0
-    batch_size_sgld: int = 50 # sgld batch size
-    log_frequency_sgld: int = 0 # reporting frequency for sgld
-    burnin_epochs: int = 10
-    mix_epochs: int = 1
+    sgld: bool = False
+    batch_size_sgld: int = 50
+    lr_base_sgld: float = 1e-4
+    lr_max_sgld: float = 2e-4
+    weight_decay_sgld: float = 0.01
+    burnin_sgld: int = 20
+    mix_epochs: int = 40
+
+
+
+
+
 
     # GP
     gp: bool = False
@@ -433,7 +436,6 @@ class SklearnPredictArgs(Tap):
     dataset_type: Literal['classification', 'regression']  # Type of dataset
     model_type: Literal['random_forest', 'svm']  # scikit-learn model to use
     checkpoint_dir: str = None  # Path to directory containing model checkpoints (.pkl file)
-    checkpoint_path: str = None  # Path to model checkpoint (.pkl file)
     checkpoint_paths: List[str] = None  # List of paths to model checkpoints (.pkl files)
     radius: int = 2  # Morgan fingerprint radius
     num_bits: int = 2048  # Number of bits in morgan fingerprint
