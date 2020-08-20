@@ -71,7 +71,7 @@ class SGLD(Optimizer):
                 
                 # gradient step for log_noise parameter
                 else:
-                    p.data.add_(d_p, alpha=-group['lr'])
+                    p.data.add_(0.5*d_p, alpha=-group['lr'])
 
         return loss
 

@@ -10,8 +10,8 @@ from chemprop.bayes import GPLayer, DKLMoleculeModel, initial_inducing_points
 from chemprop.utils import save_checkpoint, load_checkpoint
 from chemprop.nn_utils import NoamLR
 
-from .train import train
-from .evaluate import evaluate
+from ..train import train
+from ..evaluate import evaluate
 
 
 

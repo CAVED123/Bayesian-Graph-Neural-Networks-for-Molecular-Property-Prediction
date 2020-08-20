@@ -10,8 +10,8 @@ from chemprop.bayes import data_loss_bbp, BayesLinear
 from chemprop.bayes_utils import scheduler_const
 from chemprop.utils import save_checkpoint, load_checkpoint
 
-from .train import train
-from .evaluate import evaluate
+from ..train import train
+from ..evaluate import evaluate
 
 
 

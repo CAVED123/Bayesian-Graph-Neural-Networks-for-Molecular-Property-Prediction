@@ -12,7 +12,7 @@ import wandb
 from chemprop.args import TrainArgs
 from chemprop.data import MoleculeDataLoader, MoleculeDataset
 from chemprop.nn_utils import compute_gnorm, compute_pnorm, NoamLR
-
+from torch.optim.lr_scheduler import CosineAnnealingLR
 
 def train(model: nn.Module,
           data_loader: MoleculeDataLoader,
@@ -23,8 +23,6 @@ def train(model: nn.Module,
           n_iter: int = 0,
           logger: logging.Logger = None,
           writer: SummaryWriter = None,
-          swag_model: nn.Module = None,
-          sgld_switch: bool = False,
           gp_switch: bool = False,
           likelihood = None,
           bbp_switch = None) -> int:
@@ -40,7 +38,6 @@ def train(model: nn.Module,
     :param n_iter: The number of iterations (training examples) trained on so far.
     :param logger: A logger for printing intermediate results.
     :param writer: A tensorboardX SummaryWriter.
-    :param swag_model: SWAG model containing stored moments and deviations
     :return: The total number of iterations (training examples) trained on so far.
     """
     
@@ -52,7 +49,7 @@ def train(model: nn.Module,
     model.train()
     if likelihood is not None:
         likelihood.train()
-    loss_sum, loss_count = 0, 0
+    loss_sum, batch_count = 0, 0
 
     #for batch in tqdm(data_loader, total=len(data_loader)):
     for batch in data_loader:
@@ -79,10 +76,6 @@ def train(model: nn.Module,
         optimizer.zero_grad()
         
         
-        
-        
-        
-        
         ##### FORWARD PASS AND LOSS COMPUTATION #####
         
         
@@ -94,8 +87,6 @@ def train(model: nn.Module,
             # compute loss
             if gp_switch:
                 loss = -loss_func(preds, targets)
-            elif sgld_switch:
-                loss = loss_func(preds, targets, torch.exp(model.log_noise))
             else:
                 loss = loss_func(preds, targets, torch.exp(model.log_noise))
         
@@ -150,28 +141,27 @@ def train(model: nn.Module,
 
         # add to loss_sum and iter_count
         loss_sum += loss.item()
-        loss_count += 1
+        batch_count += 1
 
         # update learning rate by taking a step
-        if isinstance(scheduler, NoamLR):
+        if isinstance(scheduler, NoamLR) or isinstance(scheduler, CosineAnnealingLR):
             scheduler.step()
 
         # increment n_iter (total number of examples across epochs)
         n_iter += len(batch)
+
+        
+        ########### REPORTING
         
         # determine reporting frequency
         if gp_switch:
             batch_size = args.batch_size_gp
-        elif sgld_switch:
-            batch_size = args.batch_size_sgld
         else:
             batch_size = args.batch_size
         
         # determine log freq
         if gp_switch:
             log_frequency = args.log_frequency_gp
-        elif sgld_switch:
-            log_frequency = args.log_frequency_sgld
         else:
             log_frequency = args.log_frequency
 
@@ -180,22 +170,20 @@ def train(model: nn.Module,
             
         # per epoch reporting
         if n_iter % args.train_data_size == 0:
-            lrs = scheduler.get_lr()
+            lrs = scheduler.get_last_lr()
             pnorm = compute_pnorm(model)
             gnorm = compute_gnorm(model)
             
             ### they seem to report something funny here... check it out?
-            loss_avg = loss_sum / loss_count
-            loss_sum, loss_count = 0, 0
+            loss_avg = loss_sum / batch_count
+            loss_sum, batch_count = 0, 0
 
             lrs_str = ', '.join(f'lr_{i} = {lr:.4e}' for i, lr in enumerate(lrs))
             debug(f'Loss = {loss_avg:.4e}, PNorm = {pnorm:.4f}, GNorm = {gnorm:.4f}, {lrs_str}')
             wandb.log({"Negative log likelihood (scaled)": loss_avg}, commit=False)
 
             
-        # SWAG update
-        if (swag_model is not None) and ((n_iter // args.batch_size) % args.c_swag == 0):
-            swag_model.collect_model(model)
+
 
     return n_iter
 
