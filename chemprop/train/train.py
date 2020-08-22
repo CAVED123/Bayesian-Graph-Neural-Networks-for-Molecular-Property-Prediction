@@ -12,7 +12,7 @@ import wandb
 from chemprop.args import TrainArgs
 from chemprop.data import MoleculeDataLoader, MoleculeDataset
 from chemprop.nn_utils import compute_gnorm, compute_pnorm, NoamLR
-from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.optim.lr_scheduler import OneCycleLR
 
 def train(model: nn.Module,
           data_loader: MoleculeDataLoader,
@@ -49,7 +49,7 @@ def train(model: nn.Module,
     model.train()
     if likelihood is not None:
         likelihood.train()
-    loss_sum, batch_count = 0, 0
+    loss_sum = 0
 
     #for batch in tqdm(data_loader, total=len(data_loader)):
     for batch in data_loader:
@@ -140,11 +140,10 @@ def train(model: nn.Module,
             #print(np.sum(np.array(parameter.grad)))
 
         # add to loss_sum and iter_count
-        loss_sum += loss.item()
-        batch_count += 1
+        loss_sum += loss.item() * len(batch)
 
         # update learning rate by taking a step
-        if isinstance(scheduler, NoamLR) or isinstance(scheduler, CosineAnnealingLR):
+        if isinstance(scheduler, NoamLR) or isinstance(scheduler, OneCycleLR):
             scheduler.step()
 
         # increment n_iter (total number of examples across epochs)
@@ -174,14 +173,12 @@ def train(model: nn.Module,
             pnorm = compute_pnorm(model)
             gnorm = compute_gnorm(model)
             
-            ### they seem to report something funny here... check it out?
-            loss_avg = loss_sum / batch_count
-            loss_sum, batch_count = 0, 0
+            loss_avg = loss_sum / args.train_data_size
 
             lrs_str = ', '.join(f'lr_{i} = {lr:.4e}' for i, lr in enumerate(lrs))
             debug(f'Loss = {loss_avg:.4e}, PNorm = {pnorm:.4f}, GNorm = {gnorm:.4f}, {lrs_str}')
             wandb.log({"Negative log likelihood (scaled)": loss_avg}, commit=False)
-
+            wandb.log({"Learning rate": lrs[0]}, commit=False)
             
 
 

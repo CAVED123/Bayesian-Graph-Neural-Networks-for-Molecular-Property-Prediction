@@ -127,7 +127,7 @@ class TrainArgs(CommonArgs):
     
     ensemble_size: int = 5
     ensemble_start_idx: int = 0
-    pytorch_seeds = [0,1,2,3,4,5,6,7,8,9]
+    pytorch_seeds = [0,1,2,3,4]
     samples = 30
 
     # MAP
@@ -148,24 +148,23 @@ class TrainArgs(CommonArgs):
     # SWAG
     swag: bool = False
     batch_size_swag: int = 50
-    lr_swag: float = 1e-4
+    lr_swag: float = 3e-5
     weight_decay_swag: float = 0.01
     momentum_swag: float = 0
     burnin_swag: int = 20
     epochs_swag: int = 200
+    val_threshold: float = 3.1
     cov_mat: bool = True
     max_num_models: int = 20
     block: bool = False
-    
+
     # SGLD
     sgld: bool = False
+    mix_epochs: int = 50
     batch_size_sgld: int = 50
-    lr_base_sgld: float = 1e-4
-    lr_max_sgld: float = 2e-4
+    lr_max_sgld: float = 1.5e-4
     weight_decay_sgld: float = 0.01
-    burnin_sgld: int = 20
-    mix_epochs: int = 40
-
+    
 
 
 

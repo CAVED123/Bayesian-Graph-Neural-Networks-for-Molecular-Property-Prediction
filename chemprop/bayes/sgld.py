@@ -9,9 +9,6 @@ import numpy as np
 import torch
 
 
-
-
-
 class SGLD(Optimizer):
     """
     SGLD optimiser based on pytorch's SGD.
@@ -74,24 +71,6 @@ class SGLD(Optimizer):
                     p.data.add_(0.5*d_p, alpha=-group['lr'])
 
         return loss
-
-
-
-
-def loss_sgld(output, target, sigma):
-    """
-    Computes scaled Gaussian log likelihood
-    """
-    
-    exponent = -0.5*torch.sum(
-        (target - output)**2/sigma**2
-        , 1)
-
-    log_coeff = -torch.sum(torch.log(sigma))
-    
-    scale = 1 / len(exponent)
-    
-    return - scale * (log_coeff + exponent).sum()
 
 
 

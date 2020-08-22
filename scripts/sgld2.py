@@ -57,8 +57,8 @@ args.wandb_name = 'sgld'
 args.checkpoint_path = '/home/willlamb/checkpoints/map'
 
 # ensembling and samples
-args.ensemble_size = 3
-args.ensemble_start_idx = 0
+args.ensemble_size = 2
+args.ensemble_start_idx = 3
 args.pytorch_seeds = [0,1,2,3,4]
 args.samples = 20
 

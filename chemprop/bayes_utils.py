@@ -1,7 +1,7 @@
 
 import torch
 import torch.nn as nn
-
+import numpy as np
             
             
 def enable_dropout(m):
@@ -36,12 +36,13 @@ def unflatten_like(vector, likeTensorList):
 
 class scheduler_const():
     """
-    mock scheduler for constant learning rate
+    mock scheduler for constant learning rates
+    TAKES IN LIST
     """
-    def __init__(self, lr):
-        self.lr = lr
-    def get_lr(self):
-        return [self.lr]
+    def __init__(self, lr_list):
+        self.lr_list = lr_list
+    def get_last_lr(self):
+        return self.lr_list
 
 
 def neg_log_like(output, target, sigma):
@@ -53,7 +54,7 @@ def neg_log_like(output, target, sigma):
         (target - output)**2/sigma**2
         , 1)
 
-    log_coeff = -torch.sum(torch.log(sigma))
+    log_coeff = -torch.sum(torch.log(sigma)) - len(sigma) * torch.log(torch.sqrt(torch.tensor(2*np.pi)))
     
     scale = 1 / len(exponent)
     

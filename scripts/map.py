@@ -52,14 +52,12 @@ args.metric = 'mae'
 # names and directories
 args.save_dir = '/home/willlamb/checkpoints/map'
 args.results_dir = '/home/willlamb/results/map'
-args.wandb_proj = 'rocket'
+args.wandb_proj = 'official1'
 args.wandb_name = 'map'
 
-# ensembling
-args.ensemble_size = 10
-args.pytorch_seeds = [0,1,2,3,4,5,6,7,8,9]
-
-# samples
+# ensembling and samples
+args.ensemble_size = 5
+args.pytorch_seeds = [0,1,2,3,4]
 args.samples = 1
 
 ### map ###
