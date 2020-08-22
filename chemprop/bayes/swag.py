@@ -51,9 +51,11 @@ class SWAG(torch.nn.Module):
     SWAG module which builds upon a base NN module
     """
     
-    def __init__(self, base, no_cov_mat=True, max_num_models=0, var_clamp=1e-30):
+    def __init__(self, base, args, no_cov_mat=True, max_num_models=0, var_clamp=1e-30):
         super(SWAG, self).__init__()
 
+        self.cuda = args.cuda
+        
         # adds buffer to module, counting number of models
         self.register_buffer("n_models", torch.zeros([1], dtype=torch.long))
         
@@ -194,7 +196,7 @@ class SWAG(torch.nn.Module):
         samples_list = unflatten_like(sample, mean_list)
 
         for (module, name), sample in zip(self.params, samples_list):
-            if args.cuda:
+            if self.cuda:
                 module.__setattr__(name, sample.cuda())
             else:
                 module.__setattr__(name, sample)

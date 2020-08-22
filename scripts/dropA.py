@@ -52,20 +52,18 @@ args.metric = 'mae'
 # names and directories
 args.save_dir = '/home/willlamb/checkpoints/dropA'
 args.results_dir = '/home/willlamb/results/dropA'
-args.wandb_proj = 'rocket'
+args.wandb_proj = 'official1'
 args.wandb_name = 'dropA'
 
-# ensembling
-args.ensemble_size = 10
-args.pytorch_seeds = [0,1,2,3,4,5,6,7,8,9]
-
-# samples
+# ensembling and samples
+args.ensemble_size = 5
+args.pytorch_seeds = [0,1,2,3,4]
 args.samples = 30
 
 ### dropA ###
 args.warmup_epochs = 2.0
 args.noam_epochs = 100
-args.epochs = 350
+args.epochs = 300
 
 args.init_lr = 1e-4
 args.max_lr = 1e-3
@@ -74,8 +72,8 @@ args.final_lr = 1e-4
 args.init_log_noise = -2
 args.weight_decay = 0.01
 
-args.dropout_mpnn = 0.05
-args.dropout_ffn = 0.05
+args.dropout_mpnn = 0.1
+args.dropout_ffn = 0.1
 args.test_dropout = True  
 
 ################################################

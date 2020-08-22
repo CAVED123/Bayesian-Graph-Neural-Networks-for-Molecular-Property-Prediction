@@ -174,7 +174,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
         save_checkpoint(os.path.join(save_dir, 'model.pt'), model, scaler, features_scaler, args)
 
         # Optimizer
-        optimizer = SGD([
+        optimizer = Adam([
             {'params': model.encoder.parameters()},
             {'params': model.ffn.parameters()},
             {'params': model.log_noise, 'weight_decay': 0}
@@ -228,7 +228,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
                     {'params': model.log_noise, 'weight_decay': 0}
                     ], lr=args.final_lr, weight_decay=args.weight_decay)
 
-                scheduler = scheduler_const(args.final_lr)
+                scheduler = scheduler_const([args.final_lr])
         
         # load model with best validation score
         info(f'Model {model_idx} best validation {args.metric} = {best_score:.6f} on epoch {best_epoch}')

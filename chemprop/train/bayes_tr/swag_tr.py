@@ -7,10 +7,9 @@ from ..train import train
 from ..evaluate import evaluate
 from chemprop.data import MoleculeDataLoader
 from chemprop.utils import save_checkpoint
-from chemprop.nn_utils import NoamLR
 from chemprop.bayes.swag import SWAG
 from chemprop.bayes_utils import scheduler_const
-
+from torch.optim.lr_scheduler import OneCycleLR
 
 
 def train_swag(
@@ -52,35 +51,42 @@ def train_swag(
     # instantiate SWAG model (wrapper)
     swag_model = SWAG(
         model,
+        args,
         no_cov_mat,
         args.max_num_models,
         var_clamp=1e-30
     )
 
+    ############## DEFINE COSINE OPTIMISER AND SCHEDULER ##############
+    
     # define optimiser
     optimizer = torch.optim.SGD([
         {'params': model.encoder.parameters()},
         {'params': model.ffn.parameters()},
-        {'params': model.log_noise, 'lr': 1e-6, 'weight_decay': 0}
-        ], lr=1e-6, weight_decay=args.weight_decay_swag, momentum=args.momentum_swag)
+        {'params': model.log_noise, 'lr': args.lr_swag/5/25, 'weight_decay': 0}
+        ], lr=args.lr_swag/25, weight_decay=args.weight_decay_swag, momentum=args.momentum_swag)
 
     # define scheduler
     num_param_groups = len(optimizer.param_groups)
-    scheduler = NoamLR(
-        optimizer=optimizer,
-        warmup_epochs=[5] * num_param_groups,
-        total_epochs=[args.epochs_swag] * num_param_groups,
-        steps_per_epoch=args.train_data_size // args.batch_size_swag,
-        init_lr=[1e-6] * num_param_groups,
-        max_lr=[args.lr_swag, args.lr_swag, 1e-5],
-        final_lr=[args.lr_swag, args.lr_swag, 1e-5]
-    )
+    scheduler = OneCycleLR(
+        optimizer,
+        max_lr = [args.lr_swag, args.lr_swag, args.lr_swag/5],
+        epochs=args.epochs_swag, 
+        steps_per_epoch=-(-args.train_data_size // args.batch_size_sgld), 
+        pct_start=5/args.epochs_swag,
+        anneal_strategy='cos', 
+        cycle_momentum=False, 
+        div_factor=25.0,
+        final_div_factor=1/25)
+
+    ###################################################################
 
     print("----------SWAG training----------")
     
     # training loop
     n_iter = 0
     for epoch in range(args.epochs_swag):
+
         print(f'SWAG epoch {epoch}')
     
         n_iter = train(

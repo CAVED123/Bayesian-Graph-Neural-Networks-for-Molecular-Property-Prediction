@@ -19,7 +19,7 @@ from chemprop.train.run_training import run_training
 args = TrainArgs()
 args.from_dict({
     'dataset_type': 'regression',
-    'data_path': '/Users/georgelamb/Documents/GitHub/chempropBayes/data/QM9.csv'
+    'data_path': '/home/willlamb/chempropBayes/data/qm9.csv'
 })
 
 
@@ -39,7 +39,7 @@ args.undirected = False
 args.bias = False
 
 # data
-args.max_data_size = 50000
+args.max_data_size = 150000
 args.seed = 0 # seed for data splits
 args.split_type = 'scaffold_balanced'
 args.split_sizes = (0.64, 0.16, 0.2)
@@ -50,15 +50,15 @@ args.metric = 'mae'
 ################################################
 
 # names and directories
-args.save_dir = '/Users/georgelamb/Documents/checkpoints/swag'
-args.results_dir = '/Users/georgelamb/Documents/results/swag'
-args.wandb_proj = 'swaggerB'
+args.save_dir = '/home/willlamb/checkpoints/swag'
+args.results_dir = '/home/willlamb/results/swag'
+args.wandb_proj = 'official2'
 args.wandb_name = 'swag'
-args.checkpoint_path = '/Users/georgelamb/Documents/checkpoints/map'
+args.checkpoint_path = '/home/willlamb/checkpoints/map'
 
 # ensembling and samples
-args.ensemble_size = 1
-args.pytorch_seeds = [0,1,2,3,4,5,6,7,8,9]
+args.ensemble_size = 5
+args.pytorch_seeds = [0,1,2,3,4]
 args.samples = 30
 
 ### swag ###
@@ -66,13 +66,13 @@ args.swag = True
 args.epochs = 0
 
 args.batch_size_swag = 50
-args.lr_swag = 1e-4
+args.lr_swag = 3e-5
 args.weight_decay_swag = 0.01
 args.momentum_swag = 0
 
 args.burnin_swag = 20
 args.epochs_swag = 200
-args.val_threshold = 3.3 ##### to be confirmed
+args.val_threshold = 3.1
 
 args.cov_mat = True
 args.max_num_models = 20
