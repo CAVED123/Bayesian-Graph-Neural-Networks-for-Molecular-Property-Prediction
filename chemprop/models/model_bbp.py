@@ -53,10 +53,13 @@ class MoleculeModelBBP(nn.Module):
             if args.ffn_num_layers > 3:
                 self.layer_hid_2 = BayesLinear(args.ffn_hidden_size, args.ffn_hidden_size, self.prior_sig)
             self.layer_out = BayesLinear(args.ffn_hidden_size, self.output_size, self.prior_sig)
+
+        # create log noise parameter
+        self.create_log_noise(args)
             
             
     def create_log_noise(self, args: TrainArgs):
-        self.log_noise = nn.Parameter(torch.ones(args.num_tasks)*args.init_log_noise_bbp)
+        self.log_noise = nn.Parameter(torch.ones(args.num_tasks))
             
     
     def forward(self, *input, sample = False):

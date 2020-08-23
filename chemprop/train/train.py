@@ -49,7 +49,11 @@ def train(model: nn.Module,
     model.train()
     if likelihood is not None:
         likelihood.train()
+    
     loss_sum = 0
+    if bbp_switch is not None:
+        data_loss_sum = 0
+        kl_loss_sum = 0
 
     #for batch in tqdm(data_loader, total=len(data_loader)):
     for batch in data_loader:
@@ -93,41 +97,41 @@ def train(model: nn.Module,
         
         ### bbp non sample option
         if bbp_switch == 1:    
-            preds, tkl = model(mol_batch, features_batch, sample = False)
-            mlpdw = loss_func(preds, targets, torch.exp(model.log_noise))
-            Edkl = tkl / args.train_data_size
-            loss = Edkl + mlpdw  
+            preds, kl_loss = model(mol_batch, features_batch, sample = False)
+            data_loss = loss_func(preds, targets, torch.exp(model.log_noise))
+            kl_loss /= args.train_data_size
+            loss = data_loss + kl_loss  
             
         ### bbp sample option
         if bbp_switch == 2:
 
             if args.samples_bbp == 1:
-                preds, tkl = model(mol_batch, features_batch, sample=True)
-                mlpdw = loss_func(preds, targets, torch.exp(model.log_noise))
-                Edkl = tkl / args.train_data_size
+                preds, kl_loss = model(mol_batch, features_batch, sample=True)
+                data_loss = loss_func(preds, targets, torch.exp(model.log_noise))
+                kl_loss /= args.train_data_size
         
             elif args.samples_bbp > 1:
-                mlpdw_cum = 0
-                Edkl_cum = 0
+                data_loss_cum = 0
+                kl_loss_cum = 0
         
                 for i in range(args.samples_bbp):
-                    preds, tkl = model(mol_batch, features_batch, sample=True)
-                    mlpdw_i = loss_func(preds, targets, torch.exp(model.log_noise))                    
-                    Edkl_i = tkl / args.train_data_size                    
+                    preds, kl_loss_i = model(mol_batch, features_batch, sample=True)
+                    data_loss_i = loss_func(preds, targets, torch.exp(model.log_noise))                    
+                    kl_loss_i /= args.train_data_size                    
                     
-                    mlpdw_cum = mlpdw_cum + mlpdw_i
-                    Edkl_cum = Edkl_cum + Edkl_i
+                    data_loss_cum += data_loss_i
+                    kl_loss_cum += kl_loss_i
         
-                mlpdw = mlpdw_cum / args.samples_bbp
-                Edkl = Edkl_cum / args.samples_bbp
+                data_loss = data_loss_cum / args.samples_bbp
+                kl_loss = kl_loss_cum / args.samples_bbp
             
-            loss = Edkl + mlpdw
+            loss = data_loss + kl_loss
+            print('data loss:')
+            print(data_loss)
+            print('kl loss:')
+            print(kl_loss)
             
         #############################################
-        
-        
-        
-        
         
         
         # backward pass; update weights
@@ -141,6 +145,9 @@ def train(model: nn.Module,
 
         # add to loss_sum and iter_count
         loss_sum += loss.item() * len(batch)
+        if bbp_switch is not None:
+            data_loss_sum += data_loss.item() * len(batch)
+            kl_loss_sum += kl_loss.item() * len(batch)
 
         # update learning rate by taking a step
         if isinstance(scheduler, NoamLR) or isinstance(scheduler, OneCycleLR):
@@ -177,7 +184,17 @@ def train(model: nn.Module,
 
             lrs_str = ', '.join(f'lr_{i} = {lr:.4e}' for i, lr in enumerate(lrs))
             debug(f'Loss = {loss_avg:.4e}, PNorm = {pnorm:.4f}, GNorm = {gnorm:.4f}, {lrs_str}')
-            wandb.log({"Negative log likelihood (scaled)": loss_avg}, commit=False)
+            
+            if bbp_switch is not None:
+                data_loss_avg = data_loss_sum / args.train_data_size
+                kl_loss_avg = kl_loss_sum / args.train_data_size
+                wandb.log({"Total loss": loss_avg}, commit=False)
+                wandb.log({"Likelihood cost": data_loss_avg}, commit=False)
+                wandb.log({"KL cost": kl_loss_avg}, commit=False)
+            else:
+                wandb.log({"Negative log likelihood (scaled)": loss_avg}, commit=False)
+            
+            
             wandb.log({"Learning rate": lrs[0]}, commit=False)
             
 
