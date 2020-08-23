@@ -22,7 +22,6 @@ from chemprop.models import MoleculeModel
 from chemprop.nn_utils import param_count
 from chemprop.utils import build_optimizer, build_lr_scheduler, get_loss_func, get_metric_func, load_checkpoint,\
     makedirs, save_checkpoint, save_smiles_splits
-from chemprop.bayes import data_loss_bbp
 from chemprop.bayes_utils import neg_log_like, scheduler_const
 
 from .bayes_tr.swag_tr import train_swag
@@ -284,17 +283,18 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
         
         # BBP
         if args.bbp:
-            save_dir_bbp = os.path.join(save_dir, 'bbp_models')
-            makedirs(save_dir_bbp)
             model = train_bbp(
                 model,
-                train_data_loader,
-                val_data_loader,
+                train_data,
+                val_data,
+                num_workers,
+                cache,
+                loss_func,
                 metric_func,
                 scaler,
                 features_scaler,
                 args,
-                save_dir_bbp)
+                save_dir)
 
 
 

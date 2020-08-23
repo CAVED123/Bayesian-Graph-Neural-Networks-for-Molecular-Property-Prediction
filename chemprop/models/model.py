@@ -38,7 +38,7 @@ class MoleculeModel(nn.Module):
         
         initialize_weights(self)
         
-        # create log noise parameter if we're running SGLD
+        # create log noise parameter
         # this must take place after initialize_weights
         self.create_log_noise(args)
 
