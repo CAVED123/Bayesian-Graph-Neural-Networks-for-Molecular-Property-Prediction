@@ -19,7 +19,7 @@ from chemprop.train.run_training import run_training
 args = TrainArgs()
 args.from_dict({
     'dataset_type': 'regression',
-    'data_path': '/Users/georgelamb/Documents/GitHub/chempropBayes/data/qm9.csv'
+    'data_path': '/home/willlamb/chempropBayes/data/qm9.csv'
 })
 
 
@@ -39,7 +39,7 @@ args.undirected = False
 args.bias = False
 
 # data
-args.max_data_size = 50000
+args.max_data_size = 150000
 args.seed = 0 # seed for data splits
 args.split_type = 'scaffold_balanced'
 args.split_sizes = (0.64, 0.16, 0.2)
@@ -50,38 +50,51 @@ args.metric = 'mae'
 ################################################
 
 # names and directories
-args.save_dir = '/Users/georgelamb/Documents/checkpoints/bbp'
-args.results_dir = '/Users/georgelamb/Documents/results/bbp'
-args.wandb_proj = 'bbp_tune1'
+args.save_dir = '/home/willlamb/checkpoints/bbp'
+args.results_dir = '/home/willlamb/results/bbp'
+args.wandb_proj = 'official3'
 args.wandb_name = 'bbp'
-args.checkpoint_path = '/Users/georgelamb/Documents/checkpoints/map'
+args.checkpoint_path = '/home/willlamb/checkpoints/map'
 
 # ensembling and samples
-args.ensemble_size = 1
+args.ensemble_size = 3
+args.ensemble_start_idx = 0
 args.pytorch_seeds = [0,1,2,3,4]
 args.samples = 30
+
 
 ### bbp ###
 args.bbp = True
 args.epochs = 0
+args.epochs_bbp = 100
 
 args.batch_size_bbp = 50
-args.prior_sig_bbp = 0.06
+args.lr_bbp = 1e-4
+args.prior_sig_bbp = 0.05
 
-args.lr1_bbp = 1e-5
-args.epochs1_bbp = 10
-
-
-
-
-args.lr2_bbp = 1e-4
-args.epochs2_bbp = 10
-args.rho_min_bbp = -6
+args.rho_min_bbp = -5.5
 args.rho_max_bbp = -5
 args.samples_bbp = 5
+
+args.presave_bbp = 50
 
 
 ################################################
 
 # run
 results = run_training(args)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,4 +1,4 @@
-# script to generate sgld results
+# script to generate bbp results
 # NOTE: MUST CHANGE QM9 TO qm9 WHEN RUNNING ON CLUSTER
 # NOTE: checkpoint folder (save_dir) must be created before running
 
@@ -50,28 +50,51 @@ args.metric = 'mae'
 ################################################
 
 # names and directories
-args.save_dir = '/home/willlamb/checkpoints/sgld'
-args.results_dir = '/home/willlamb/results/sgld'
-args.wandb_proj = 'official2'
-args.wandb_name = 'sgld'
+args.save_dir = '/home/willlamb/checkpoints/bbp'
+args.results_dir = '/home/willlamb/results/bbp'
+args.wandb_proj = 'official3'
+args.wandb_name = 'bbp'
 args.checkpoint_path = '/home/willlamb/checkpoints/map'
 
 # ensembling and samples
-args.ensemble_size = 3
-args.ensemble_start_idx = 0
+args.ensemble_size = 2
+args.ensemble_start_idx = 3
 args.pytorch_seeds = [0,1,2,3,4]
-args.samples = 20
+args.samples = 30
 
-### sgld ###
-args.sgld = True
+
+### bbp ###
+args.bbp = True
 args.epochs = 0
-args.mix_epochs = 50
+args.epochs_bbp = 100
 
-args.batch_size_sgld = 50
-args.lr_max_sgld = 1.5e-4
-args.weight_decay_sgld = 0.01
+args.batch_size_bbp = 50
+args.lr_bbp = 1e-4
+args.prior_sig_bbp = 0.05
+
+args.rho_min_bbp = -5.5
+args.rho_max_bbp = -5
+args.samples_bbp = 5
+
+args.presave_bbp = 50
+
 
 ################################################
 
 # run
 results = run_training(args)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

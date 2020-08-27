@@ -1,4 +1,4 @@
-# script to generate swag results
+# script to generate sgld results
 # NOTE: MUST CHANGE QM9 TO qm9 WHEN RUNNING ON CLUSTER
 # NOTE: checkpoint folder (save_dir) must be created before running
 
@@ -50,33 +50,26 @@ args.metric = 'mae'
 ################################################
 
 # names and directories
-args.save_dir = '/home/willlamb/checkpoints/swag'
-args.results_dir = '/home/willlamb/results/swag'
+args.save_dir = '/home/willlamb/checkpoints/sgld'
+args.results_dir = '/home/willlamb/results/sgld'
 args.wandb_proj = 'official2b'
-args.wandb_name = 'swag'
+args.wandb_name = 'sgld'
 args.checkpoint_path = '/home/willlamb/checkpoints/map'
 
 # ensembling and samples
-args.ensemble_size = 5
+args.ensemble_size = 1
+args.ensemble_start_idx = 0
 args.pytorch_seeds = [0,1,2,3,4]
-args.samples = 30
+args.samples = 20
 
-### swag ###
-args.swag = True
+### sgld ###
+args.sgld = True
 args.epochs = 0
+args.mix_epochs = 50
 
-args.batch_size_swag = 50
-args.lr_swag = 2e-5
-args.weight_decay_swag = 0.01
-args.momentum_swag = 0
-
-args.burnin_swag = 20
-args.epochs_swag = 100
-args.val_threshold = 2.8
-
-args.cov_mat = True
-args.max_num_models = 20
-args.block = False
+args.batch_size_sgld = 50
+args.lr_max_sgld = 1e-4
+args.weight_decay_sgld = 0.01
 
 ################################################
 

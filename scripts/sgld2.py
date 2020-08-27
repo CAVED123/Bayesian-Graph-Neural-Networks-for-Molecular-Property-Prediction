@@ -52,13 +52,13 @@ args.metric = 'mae'
 # names and directories
 args.save_dir = '/home/willlamb/checkpoints/sgld'
 args.results_dir = '/home/willlamb/results/sgld'
-args.wandb_proj = 'official2'
+args.wandb_proj = 'official2b'
 args.wandb_name = 'sgld'
 args.checkpoint_path = '/home/willlamb/checkpoints/map'
 
 # ensembling and samples
-args.ensemble_size = 2
-args.ensemble_start_idx = 3
+args.ensemble_size = 1
+args.ensemble_start_idx = 1
 args.pytorch_seeds = [0,1,2,3,4]
 args.samples = 20
 
