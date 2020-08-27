@@ -250,7 +250,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
                 save_dir)
 
         # SGLD loop, which saves nets
-        if args.sgld:
+        if not args.sgld:
             model = train_sgld(
                 model,
                 train_data,

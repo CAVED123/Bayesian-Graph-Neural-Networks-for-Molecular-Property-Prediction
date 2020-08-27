@@ -52,7 +52,7 @@ args.metric = 'mae'
 # names and directories
 args.save_dir = '/home/willlamb/checkpoints/swag'
 args.results_dir = '/home/willlamb/results/swag'
-args.wandb_proj = 'official2'
+args.wandb_proj = 'official2b'
 args.wandb_name = 'swag'
 args.checkpoint_path = '/home/willlamb/checkpoints/map'
 
@@ -66,13 +66,13 @@ args.swag = True
 args.epochs = 0
 
 args.batch_size_swag = 50
-args.lr_swag = 3e-5
+args.lr_swag = 2e-5
 args.weight_decay_swag = 0.01
 args.momentum_swag = 0
 
 args.burnin_swag = 20
-args.epochs_swag = 200
-args.val_threshold = 3.1
+args.epochs_swag = 100
+args.val_threshold = 2.8
 
 args.cov_mat = True
 args.max_num_models = 20

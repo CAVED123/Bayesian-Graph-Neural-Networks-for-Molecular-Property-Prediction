@@ -126,10 +126,10 @@ def train(model: nn.Module,
                 kl_loss = kl_loss_cum / args.samples_bbp
             
             loss = data_loss + kl_loss
-            print('data loss:')
-            print(data_loss)
-            print('kl loss:')
-            print(kl_loss)
+            #print('data loss:')
+            #print(data_loss)
+            #print('kl loss:')
+            #print(kl_loss)
             
         #############################################
         

@@ -48,72 +48,15 @@ def train_bbp(
         num_workers=num_workers,
         cache=cache
     )
-
-    #################################################################################
-    # PHASE 1 = INSTANTIATE BBP MODEL AND TRAIN MEANS + NOISE WITH PRIOR SIGMA
-    #################################################################################
     
     # instantiate BBP model with Bayesian linear layers (includes log noise)
     model_bbp = MoleculeModelBBP(args)
-    
+
     # copy over parameters from pretrained to BBP model
     # we take the transpose because the Bayes linear layers have transpose shapes
     for (_, param_bbp), (_, param_pre) in zip(model_bbp.named_parameters(), model.named_parameters()):
         param_bbp.data = copy.deepcopy(param_pre.data.T)
-    
-    # optimiser
-    optimizer = torch.optim.Adam(model_bbp.parameters(), lr=args.lr1_bbp)
-    
-    # scheduler
-    scheduler = scheduler_const([args.lr1_bbp])
-    
-    print("----------BBP training PHASE 1----------")
-    
-    # training loop
-    n_iter = 0
-    for epoch in range(args.epochs1_bbp):
-        continue
-        print(f'BBP phase 1 epoch {epoch}')
-    
-        n_iter = train(
-                model=model_bbp,
-                data_loader=train_data_loader,
-                loss_func=loss_func,
-                optimizer=optimizer,
-                scheduler=scheduler,
-                args=args,
-                n_iter=n_iter,
-                bbp_switch=1
-            )
         
-        val_scores = evaluate(
-                model=model_bbp,
-                data_loader=val_data_loader,
-                args=args,
-                num_tasks=args.num_tasks,
-                metric_func=metric_func,
-                dataset_type=args.dataset_type,
-                scaler=scaler
-            )
-        
-        # Average validation score
-        avg_val_score = np.nanmean(val_scores)
-        print(f'Validation {args.metric} = {avg_val_score:.6f}')
-        wandb.log({"Validation MAE": avg_val_score})
-        
-    #print('saving phase 1 model_bbp')
-    #save_checkpoint(os.path.join(save_dir, 'model_phase1.pt'), model_bbp, scaler, features_scaler, args)        
-    
-    print('loading phase 1 model_bbp')
-    template = MoleculeModelBBP(args)
-    model_bbp = load_checkpoint(os.path.join(save_dir, 'model_phase1.pt'), device=args.device, logger=None, template = template)    
-
-
-        
-    #################################################################################
-    # PHASE 2 = INSTANTIATE RHOS, FREEZE LOG NOISE, TRAIN MEANS AND BANDWIDTHS
-    #################################################################################
-    
     # instantiate rho for each weight
     for layer in model_bbp.children():
         if isinstance(layer, BayesLinear):
@@ -121,26 +64,25 @@ def train_bbp(
     for layer in model_bbp.encoder.encoder.children():
         if isinstance(layer, BayesLinear):
             layer.init_rho(args.rho_min_bbp, args.rho_max_bbp)
-            
-    # freeze log noise
-    for name, parameter in model_bbp.named_parameters():
-        if name == 'log_noise':
-            parameter.requires_grad = False
-        else:
-            parameter.requires_grad = True
 
+    # move bbp model to cuda
+    if args.cuda:
+        print('Moving bbp model to cuda')
+        model_bbp = model_bbp.to(args.device)
+    
     # optimiser
-    optimizer = torch.optim.Adam(model_bbp.parameters(), lr=args.lr2_bbp)
+    optimizer = torch.optim.Adam(model_bbp.parameters(), lr=args.lr_bbp)
     
     # scheduler
-    scheduler = scheduler_const([args.lr2_bbp])
+    scheduler = scheduler_const([args.lr_bbp])
     
-    print("----------BBP training PHASE 2----------")
+    print("----------BBP training----------")
     
     # training loop
-    n_iter = 0
-    for epoch in range(args.epochs2_bbp):
-        print(f'BBP phase 2 epoch {epoch}')
+    best_score = float('inf') if args.minimize_score else -float('inf')
+    best_epoch, n_iter = 0, 0
+    for epoch in range(args.epochs_bbp):
+        print(f'BBP epoch {epoch}')
     
         n_iter = train(
                 model=model_bbp,
@@ -167,19 +109,24 @@ def train_bbp(
         avg_val_score = np.nanmean(val_scores)
         print(f'Validation {args.metric} = {avg_val_score:.6f}')
         wandb.log({"Validation MAE": avg_val_score})
-        
-    print('saving phase 2 model_bbp')
-    save_checkpoint(os.path.join(save_dir, 'model_phase2.pt'), model_bbp, scaler, features_scaler, args)        
+
+        # Save model checkpoint if improved validation score
+        if (args.minimize_score and avg_val_score < best_score or \
+                not args.minimize_score and avg_val_score > best_score) and (epoch >= args.presave_bbp):
+            best_score, best_epoch = avg_val_score, epoch
+            save_checkpoint(os.path.join(save_dir, 'model_bbp.pt'), model_bbp, scaler, features_scaler, args)
     
-    return model_bbp 
+    # load model with best validation score
+    template = MoleculeModelBBP(args)
+    for layer in template.children():
+        if isinstance(layer, BayesLinear):
+            layer.init_rho(args.rho_min_bbp, args.rho_max_bbp)
+    for layer in template.encoder.encoder.children():
+        if isinstance(layer, BayesLinear):
+            layer.init_rho(args.rho_min_bbp, args.rho_max_bbp)
+    print(f'Best validation {args.metric} = {best_score:.6f} on epoch {best_epoch}')
+    model_bbp = load_checkpoint(os.path.join(save_dir, 'model_bbp.pt'), device=args.device, logger=None, template = template)
 
 
-
-
-
-
-
-
-
-
+    return model_bbp
 
