@@ -19,7 +19,7 @@ from chemprop.train.run_training import run_training
 args = TrainArgs()
 args.from_dict({
     'dataset_type': 'regression',
-    'data_path': '/Users/georgelamb/Documents/GitHub/chempropBayes/data/qm9.csv'
+    'data_path': '/home/willlamb/chempropBayes/data/qm9.csv'
 })
 
 
@@ -28,7 +28,7 @@ args.from_dict({
 
 # architecture
 args.hidden_size = 500
-args.depth = 5
+#args.depth = 5
 args.ffn_num_layers = 3
 args.activation = 'ReLU'
 args.ffn_hidden_size = args.hidden_size
@@ -39,7 +39,7 @@ args.undirected = False
 args.bias = False
 
 # data
-args.max_data_size = 1000
+args.max_data_size = 150000
 args.seed = 0 # seed for data splits
 args.split_type = 'scaffold_balanced'
 args.split_sizes = (0.64, 0.16, 0.2)
@@ -50,10 +50,11 @@ args.metric = 'mae'
 ################################################
 
 # names and directories
-args.save_dir = '/Users/georgelamb/Documents/checkpoints/dun'
-args.results_dir = '/Users/georgelamb/Documents/results/dun'
+args.save_dir = '/home/willlamb/checkpoints/dun'
+args.results_dir = '/home/willlamb/results/dun'
 args.wandb_proj = 'dun_tune'
-args.wandb_name = 'dun'
+args.wandb_name = 'dun_practice19'
+args.checkpoint_path = None
 
 # ensembling and samples
 args.ensemble_size = 1
@@ -66,7 +67,7 @@ args.samples = 30
 
 args.dun = True
 args.depth_min = 3
-args.depth_max = 6
+args.depth_max = 7
 
 args.epochs = 0
 args.epochs_dun = 300
@@ -80,7 +81,9 @@ args.rho_min_dun = -5.5
 args.rho_max_dun = -5
 args.samples_dun = 5
 
-args.presave_dun = 250
+args.presave_dun = 200
+
+args.log_cat_init = 0
 
 
 ################################################

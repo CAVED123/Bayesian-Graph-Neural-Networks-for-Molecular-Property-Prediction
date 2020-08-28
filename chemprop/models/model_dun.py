@@ -66,12 +66,12 @@ class MoleculeModelDUN(nn.Module):
 
 
 
-    def create_categorical(self, args: TrainArgs):
+    def create_log_cat(self, args: TrainArgs):
         """
         creates variational categorical distribution over depths
         """
         depth_range = (args.depth_max - args.depth_min) + 1
-        self.categorical = nn.Parameter(torch.ones(depth_range)/depth_range)
+        self.log_cat = nn.Parameter(torch.ones(depth_range)*args.log_cat_init)
     
     
     def forward(self, *input, sample = False):
@@ -117,8 +117,8 @@ class MoleculeModelDUN(nn.Module):
         # output_list to tensor
         output_list = torch.stack(output_list)
 
-        # normalise categorical parameter
-        cat = self.categorical / (self.categorical.sum())
+        # normalise categorical
+        cat = torch.exp(self.log_cat) / torch.sum(torch.exp(self.log_cat))
 
         # compute single output
         cat_reshape = cat.reshape(len(cat),1,1)

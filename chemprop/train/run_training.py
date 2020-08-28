@@ -146,12 +146,15 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
         makedirs(results_dir)
 
         # initialise wandb
+        os.environ['WANDB_MODE'] = 'dryrun'
         if model_idx > 0:
             wandb.join()
         wandb.init(
             name=args.wandb_name+'_'+str(model_idx),
             project=args.wandb_proj,
             reinit=True)
+        print('WANDB directory is:')
+        print(wandb.run.dir)
         ####################################
 
 
@@ -339,8 +342,8 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
 
             # save test_preds and aleatoric uncertainties
             if args.dun:
-                cat = model.categorical.detach().cpu().numpy()
-                cat /= np.sum(cat)
+                log_cat = model.log_cat.detach().cpu().numpy()
+                cat = np.exp(log_cat) / np.sum(np.exp(log_cat))    
                 np.savez(os.path.join(results_dir, f'cat_{sample_idx}'), cat)    
             if args.swag:
                 log_noise = model.base.log_noise

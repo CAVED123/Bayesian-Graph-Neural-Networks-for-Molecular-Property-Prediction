@@ -46,7 +46,7 @@ def predict(model: nn.Module,
             break
 
     try:
-        model.categorical
+        model.log_cat
     except:
         dun = False
     else:
