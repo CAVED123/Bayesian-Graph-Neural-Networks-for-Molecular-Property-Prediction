@@ -176,21 +176,9 @@ class TrainArgs(CommonArgs):
     rho_max_bbp = -5
     samples_bbp = 5
 
-
-
-
-
-    # GP
+    # GP, DUN
+    dun: bool = False
     gp: bool = False
-    num_inducing_points: int = 2000
-    batch_size_gp: int = 100
-    log_frequency_gp: int = 100
-    epochs_gp: int = 100
-    warmup_epochs_gp: int = 4
-    unfreeze_epoch_gp: int = 50 # unfreeze featurizer weights after this many epochs
-    init_lr_gp: float = 1e-4
-    max_lr_gp: float = 1e-3
-    final_lr_gp: float = 1e-4
     
 
     

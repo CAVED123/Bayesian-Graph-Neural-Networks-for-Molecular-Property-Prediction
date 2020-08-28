@@ -1,5 +1,13 @@
+
+import numpy as np
 import torch
+import torch.nn as nn
 import gpytorch
+
+from typing import List
+
+from chemprop.args import TrainArgs
+from chemprop.data import MoleculeDataLoader, MoleculeDataset, StandardScaler
 
 
 class GPLayer(gpytorch.models.ApproximateGP):
@@ -92,6 +100,42 @@ def initial_inducing_points(
     
     
     
+
+
+
+
+
+def predict_std_gp(
+    model: nn.Module, 
+    data_loader: MoleculeDataLoader,
+    args: TrainArgs,
+    scaler: StandardScaler,
+    likelihood) -> List[List[float]]:
+    
+    model.eval()
+    preds = []
+
+    for batch in data_loader:
+        batch: MoleculeDataset
+        mol_batch, features_batch = batch.batch_graph(), batch.features()
+
+        with torch.no_grad():
+            # get variance
+            batch_preds = likelihood(model(mol_batch, features_batch)).variance
+
+        # take sqr root
+        batch_preds = np.sqrt(batch_preds.data.cpu().numpy())
+
+        # Inverse scale
+        if scaler is not None:
+            batch_preds = batch_preds * np.array(scaler.stds)
+
+        # Collect vectors
+        batch_preds = batch_preds.tolist()
+        preds.extend(batch_preds)
+
+    return preds
+
     
     
     
