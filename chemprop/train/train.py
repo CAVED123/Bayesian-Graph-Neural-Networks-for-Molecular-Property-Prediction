@@ -197,24 +197,9 @@ def train(model: nn.Module,
         n_iter += len(batch)
 
         
-        ########### REPORTING
-        
-        # determine reporting frequency
-        if gp_switch:
-            batch_size = args.batch_size_gp
-        else:
-            batch_size = args.batch_size
-        
-        # determine log freq
-        if gp_switch:
-            log_frequency = args.log_frequency_gp
-        else:
-            log_frequency = args.log_frequency
 
-        # Log and/or add to tensorboard
-        #if (n_iter // batch_size) % log_frequency == 0:
             
-        # per epoch reporting
+        ########### per epoch REPORTING
         if n_iter % args.train_data_size == 0:
             lrs = scheduler.get_last_lr()
             pnorm = compute_pnorm(model)
@@ -232,7 +217,10 @@ def train(model: nn.Module,
                 wandb.log({"Likelihood cost": data_loss_avg}, commit=False)
                 wandb.log({"KL cost": kl_loss_avg}, commit=False)
             else:
-                wandb.log({"Negative log likelihood (scaled)": loss_avg}, commit=False)
+                if gp_switch:
+                    wandb.log({"Negative MLL": loss_avg}, commit=False)
+                else:
+                    wandb.log({"Negative log likelihood (scaled)": loss_avg}, commit=False)
             
             
             wandb.log({"Learning rate": lrs[0]}, commit=False)

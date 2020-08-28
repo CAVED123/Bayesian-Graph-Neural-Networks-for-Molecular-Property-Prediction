@@ -29,6 +29,8 @@ from .bayes_tr.sgld_tr import train_sgld
 from .bayes_tr.gp_tr import train_gp
 from .bayes_tr.bbp_tr import train_bbp
 from .bayes_tr.dun_tr import train_dun
+from chemprop.bayes import predict_std_gp
+
 
 
 def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
@@ -147,8 +149,6 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
 
         # initialise wandb
         os.environ['WANDB_MODE'] = 'dryrun'
-        if model_idx > 0:
-            wandb.join()
         wandb.init(
             name=args.wandb_name+'_'+str(model_idx),
             project=args.wandb_proj,
@@ -269,9 +269,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
         
         # GP loop
         if args.gp:
-            save_dir_gp = os.path.join(save_dir, 'GP_model')
-            makedirs(save_dir_gp)
-            model = train_gp(
+            model, likelihood = train_gp(
                 model,
                 train_data,
                 val_data,
@@ -281,8 +279,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
                 scaler,
                 features_scaler,
                 args,
-                save_dir_gp,
-                logger)
+                save_dir)
         
         # BBP
         if args.bbp:
@@ -337,21 +334,54 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
                 args=args,
                 scaler=scaler,
                 test_data=True,
-                bbp_sample=True
-            )
+                bbp_sample=True)
 
-            # save test_preds and aleatoric uncertainties
-            if args.dun:
-                log_cat = model.log_cat.detach().cpu().numpy()
-                cat = np.exp(log_cat) / np.sum(np.exp(log_cat))    
-                np.savez(os.path.join(results_dir, f'cat_{sample_idx}'), cat)    
-            if args.swag:
-                log_noise = model.base.log_noise
+            
+            #######################################################################
+            #######################################################################
+            #####        SAVING STUFF DOWN
+            
+            
+            if args.gp:
+
+                # get test_preds_std (scaled back to original data)
+                test_preds_std = predict_std_gp(
+                    model=model,
+                    data_loader=test_data_loader,
+                    args=args,
+                    scaler=scaler,
+                    likelihood = likelihood)
+
+                # 1 - MEANS
+                np.savez(os.path.join(results_dir, f'preds_{sample_idx}'), np.array(test_preds))
+
+                # 2 - STD, combined aleatoric and epistemic (we save down the stds, always)
+                np.savez(os.path.join(results_dir, f'predsSTDEV_{sample_idx}'), np.array(test_preds_std))
+
+
             else:
-                log_noise = model.log_noise
-            noise = np.exp(log_noise.detach().cpu().numpy()) * np.array(scaler.stds)
-            np.savez(os.path.join(results_dir, f'preds_{sample_idx}'), np.array(test_preds))
-            np.savez(os.path.join(results_dir, f'noise_{sample_idx}'), noise)
+
+                # save test_preds and aleatoric uncertainties
+                if args.dun:
+                    log_cat = model.log_cat.detach().cpu().numpy()
+                    cat = np.exp(log_cat) / np.sum(np.exp(log_cat))    
+                    np.savez(os.path.join(results_dir, f'cat_{sample_idx}'), cat)    
+                if args.swag:
+                    log_noise = model.base.log_noise
+                else:
+                    log_noise = model.log_noise
+                noise = np.exp(log_noise.detach().cpu().numpy()) * np.array(scaler.stds)
+                np.savez(os.path.join(results_dir, f'preds_{sample_idx}'), np.array(test_preds))
+                np.savez(os.path.join(results_dir, f'noise_{sample_idx}'), noise)
+
+
+            #######################################################################
+            #######################################################################
+
+
+
+
+
 
             # add predictions to sum_test_preds
             if len(test_preds) != 0:
