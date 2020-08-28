@@ -1,4 +1,4 @@
-# script to generate bbp results
+# script to generate dun results
 # NOTE: MUST CHANGE QM9 TO qm9 WHEN RUNNING ON CLUSTER
 # NOTE: checkpoint folder (save_dir) must be created before running
 
@@ -19,7 +19,7 @@ from chemprop.train.run_training import run_training
 args = TrainArgs()
 args.from_dict({
     'dataset_type': 'regression',
-    'data_path': '/home/willlamb/chempropBayes/data/qm9.csv'
+    'data_path': '/Users/georgelamb/Documents/GitHub/chempropBayes/data/qm9.csv'
 })
 
 
@@ -39,7 +39,7 @@ args.undirected = False
 args.bias = False
 
 # data
-args.max_data_size = 150000
+args.max_data_size = 1000
 args.seed = 0 # seed for data splits
 args.split_type = 'scaffold_balanced'
 args.split_sizes = (0.64, 0.16, 0.2)
@@ -50,47 +50,43 @@ args.metric = 'mae'
 ################################################
 
 # names and directories
-args.save_dir = '/home/willlamb/checkpoints/bbp'
-args.results_dir = '/home/willlamb/results/bbp'
-args.wandb_proj = 'official3'
-args.wandb_name = 'bbp'
-args.checkpoint_path = '/home/willlamb/checkpoints/map'
+args.save_dir = '/Users/georgelamb/Documents/checkpoints/dun'
+args.results_dir = '/Users/georgelamb/Documents/results/dun'
+args.wandb_proj = 'dun_tune'
+args.wandb_name = 'dun'
 
 # ensembling and samples
-args.ensemble_size = 2
-args.ensemble_start_idx = 3
+args.ensemble_size = 1
+args.ensemble_start_idx = 0
 args.pytorch_seeds = [0,1,2,3,4]
 args.samples = 30
 
 
-### bbp ###
-args.bbp = True
+### dun ###
+
+args.dun = True
+args.depth_min = 3
+args.depth_max = 6
+
 args.epochs = 0
-args.epochs_bbp = 100
+args.epochs_dun = 300
 
-args.batch_size_bbp = 50
-args.lr_bbp = 1e-4
-args.prior_sig_bbp = 0.05
+args.batch_size_dun = 50
+args.lr_dun_min = 1e-4
+args.lr_dun_max = 1e-3
+args.prior_sig_dun = 0.05
 
-args.rho_min_bbp = -5.5
-args.rho_max_bbp = -5
-args.samples_bbp = 5
+args.rho_min_dun = -5.5
+args.rho_max_dun = -5
+args.samples_dun = 5
 
-args.presave_bbp = 50
+args.presave_dun = 250
 
 
 ################################################
 
 # run
 results = run_training(args)
-
-
-
-
-
-
-
-
 
 
 

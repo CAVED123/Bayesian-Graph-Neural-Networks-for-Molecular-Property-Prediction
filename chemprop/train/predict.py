@@ -30,7 +30,7 @@ def predict(model: nn.Module,
     while the inner list is tasks.
     """
     
-    ########## detection of gp or bayeslinear layer
+    ########## detection of gp or bayeslinear layer or DUN
     
     try:
         model.gp_layer
@@ -44,6 +44,16 @@ def predict(model: nn.Module,
         if isinstance(layer, BayesLinear):
             bbp = True
             break
+
+    try:
+        model.categorical
+    except:
+        dun = False
+    else:
+        dun = True
+    
+
+
     
     
     # set model to eval mode
@@ -66,7 +76,10 @@ def predict(model: nn.Module,
             if gp:
                 batch_preds = model(mol_batch, features_batch).mean
             elif bbp:
-                batch_preds, _ = model(mol_batch, features_batch, sample=bbp_sample)
+                if dun:
+                    batch_preds, _, _ = model(mol_batch, features_batch, sample=bbp_sample)
+                else:
+                    batch_preds, _ = model(mol_batch, features_batch, sample=bbp_sample)
             else:
                 batch_preds = model(mol_batch, features_batch)
 
