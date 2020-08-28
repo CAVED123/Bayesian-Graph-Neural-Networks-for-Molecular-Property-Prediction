@@ -165,6 +165,16 @@ class TrainArgs(CommonArgs):
     lr_max_sgld: float = 1.5e-4
     weight_decay_sgld: float = 0.01
     
+    # BBP
+    bbp = False
+    epochs_bbp = 100
+    presave_bbp = 50
+    batch_size_bbp = 50
+    lr_bbp = 1e-4
+    prior_sig_bbp = 0.05
+    rho_min_bbp = -5.5
+    rho_max_bbp = -5
+    samples_bbp = 5
 
 
 
@@ -182,9 +192,7 @@ class TrainArgs(CommonArgs):
     max_lr_gp: float = 1e-3
     final_lr_gp: float = 1e-4
     
-    # BBP
-    prior_sig_bbp = 1
-    bbp = False
+
     
     
     ######################################################

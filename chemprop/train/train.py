@@ -126,10 +126,46 @@ def train(model: nn.Module,
                 kl_loss = kl_loss_cum / args.samples_bbp
             
             loss = data_loss + kl_loss
-            #print('data loss:')
-            #print(data_loss)
-            #print('kl loss:')
-            #print(kl_loss)
+
+        ### DUN non sample option
+        if bbp_switch == 3:    
+            cat = model.categorical / (model.categorical.sum())
+            _, preds_list, kl_loss = model(mol_batch, features_batch, sample=False)
+            data_loss = loss_func(preds_list, targets, torch.exp(model.log_noise), cat)
+            kl_loss /= args.train_data_size
+            loss = data_loss + kl_loss  
+
+        ### DUN sample option
+        if bbp_switch == 4:
+
+            cat = model.categorical / (model.categorical.sum())
+
+            if args.samples_dun == 1:
+                _, preds_list, kl_loss = model(mol_batch, features_batch, sample=True)
+                data_loss = loss_func(preds_list, targets, torch.exp(model.log_noise), cat)
+                kl_loss /= args.train_data_size
+        
+            elif args.samples_dun > 1:
+                data_loss_cum = 0
+                kl_loss_cum = 0
+        
+                for i in range(args.samples_dun):
+                    _, preds_list, kl_loss_i = model(mol_batch, features_batch, sample=True)
+                    data_loss_i = loss_func(preds_list, targets, torch.exp(model.log_noise), cat)
+                    kl_loss_i /= args.train_data_size                    
+                    
+                    data_loss_cum += data_loss_i
+                    kl_loss_cum += kl_loss_i
+        
+                data_loss = data_loss_cum / args.samples_dun
+                kl_loss = kl_loss_cum / args.samples_dun
+            
+            loss = data_loss + kl_loss
+
+            print('-----')
+            print(data_loss)
+            print(kl_loss)
+            print(cat)
             
         #############################################
         

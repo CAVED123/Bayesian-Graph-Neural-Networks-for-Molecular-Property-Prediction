@@ -28,7 +28,7 @@ from .bayes_tr.swag_tr import train_swag
 from .bayes_tr.sgld_tr import train_sgld
 from .bayes_tr.gp_tr import train_gp
 from .bayes_tr.bbp_tr import train_bbp
-
+from .bayes_tr.dun_tr import train_dun
 
 
 def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
@@ -250,7 +250,7 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
                 save_dir)
 
         # SGLD loop, which saves nets
-        if not args.sgld:
+        if args.sgld:
             model = train_sgld(
                 model,
                 train_data,
@@ -296,7 +296,20 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
                 args,
                 save_dir)
 
-
+        # DUN
+        if args.dun:
+            model = train_dun(
+                model,
+                train_data,
+                val_data,
+                num_workers,
+                cache,
+                loss_func,
+                metric_func,
+                scaler,
+                features_scaler,
+                args,
+                save_dir)
 
         
         
@@ -325,6 +338,10 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
             )
 
             # save test_preds and aleatoric uncertainties
+            if args.dun:
+                cat = model.categorical.detach().cpu().numpy()
+                cat /= np.sum(cat)
+                np.savez(os.path.join(results_dir, f'cat_{sample_idx}'), cat)    
             if args.swag:
                 log_noise = model.base.log_noise
             else:
