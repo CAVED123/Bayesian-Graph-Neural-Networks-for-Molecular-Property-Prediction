@@ -67,7 +67,7 @@ def train_dun(
             layer.init_rho(args.rho_min_dun, args.rho_max_dun)
 
     # instantiate variational categorical distribution
-    model_dun.create_categorical(args)
+    model_dun.create_log_cat(args)
 
     # move dun model to cuda
     if args.cuda:
@@ -88,25 +88,36 @@ def train_dun(
         steps_per_epoch=args.train_data_size // args.batch_size_dun,
         init_lr=[args.lr_dun_min],
         max_lr=[args.lr_dun_max],
-        final_lr=[args.lr_dun_min])
+        final_lr=[args.lr_dun_min]
+    )
+
+    # non sampling mode for first 100 epochs
+    bbp_switch = 3
+    
+    # freeze log_cat for first 100 epochs
+    for name, parameter in model_dun.named_parameters():
+        if name == 'log_cat':
+            parameter.requires_grad = False
+        else:
+            parameter.requires_grad = True
+
     
     print("----------DUN training----------")
     
     # training loop
     best_score = float('inf') if args.minimize_score else -float('inf')
     best_epoch, n_iter = 0, 0
-    bbp_switch = 3
     for epoch in range(args.epochs_dun):
         print(f'DUN epoch {epoch}')
 
-        # switch scheduler after 100 epochs
+        # start second phase
         if epoch == 100:
             scheduler = scheduler_const([args.lr_dun_min])
-
-        # change bbp_switch after 150 epochs
-        if epoch == 150:
             bbp_switch = 4
-    
+            for name, parameter in model_dun.named_parameters():
+                parameter.requires_grad = True
+
+
         n_iter = train(
                 model=model_dun,
                 data_loader=train_data_loader,
@@ -132,6 +143,8 @@ def train_dun(
         avg_val_score = np.nanmean(val_scores)
         print(f'Validation {args.metric} = {avg_val_score:.6f}')
         wandb.log({"Validation MAE": avg_val_score})
+        print('variational categorical:')
+        print(torch.exp(model_dun.log_cat) / torch.sum(torch.exp(model_dun.log_cat)))
 
         # Save model checkpoint if improved validation score
         if (args.minimize_score and avg_val_score < best_score or \
@@ -147,7 +160,7 @@ def train_dun(
     for layer in template.encoder.encoder.children():
         if isinstance(layer, BayesLinear):
             layer.init_rho(args.rho_min_dun, args.rho_max_dun)
-    template.create_categorical(args)
+    template.create_log_cat(args)
     print(f'Best validation {args.metric} = {best_score:.6f} on epoch {best_epoch}')
     model_dun = load_checkpoint(os.path.join(save_dir, 'model_dun.pt'), device=args.device, logger=None, template = template)
 

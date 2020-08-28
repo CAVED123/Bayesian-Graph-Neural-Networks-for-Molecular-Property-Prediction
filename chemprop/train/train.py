@@ -128,17 +128,21 @@ def train(model: nn.Module,
             loss = data_loss + kl_loss
 
         ### DUN non sample option
-        if bbp_switch == 3:    
-            cat = model.categorical / (model.categorical.sum())
+        if bbp_switch == 3:
+            cat = torch.exp(model.log_cat) / torch.sum(torch.exp(model.log_cat))    
             _, preds_list, kl_loss = model(mol_batch, features_batch, sample=False)
             data_loss = loss_func(preds_list, targets, torch.exp(model.log_noise), cat)
             kl_loss /= args.train_data_size
-            loss = data_loss + kl_loss  
+            loss = data_loss + kl_loss
+            #print('-----')
+            #print(data_loss)
+            #print(kl_loss)
+            #print(cat)
 
         ### DUN sample option
         if bbp_switch == 4:
 
-            cat = model.categorical / (model.categorical.sum())
+            cat = torch.exp(model.log_cat) / torch.sum(torch.exp(model.log_cat))
 
             if args.samples_dun == 1:
                 _, preds_list, kl_loss = model(mol_batch, features_batch, sample=True)
@@ -162,10 +166,10 @@ def train(model: nn.Module,
             
             loss = data_loss + kl_loss
 
-            print('-----')
-            print(data_loss)
-            print(kl_loss)
-            print(cat)
+            #print('-----')
+            #print(data_loss)
+            #print(kl_loss)
+            #print(cat)
             
         #############################################
         
