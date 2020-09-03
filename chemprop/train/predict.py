@@ -77,7 +77,7 @@ def predict(model: nn.Module,
                 batch_preds = model(mol_batch, features_batch).mean
             elif bbp:
                 if dun:
-                    batch_preds, _, _ = model(mol_batch, features_batch, sample=bbp_sample)
+                    batch_preds, _, _, _ = model(mol_batch, features_batch, sample=bbp_sample)
                 else:
                     batch_preds, _ = model(mol_batch, features_batch, sample=bbp_sample)
             else:

@@ -78,7 +78,7 @@ def train_gp(
     
     # optimizer
     params_list = [
-        {'params': model.feature_extractor.parameters()},
+        {'params': model.feature_extractor.parameters(), 'weight_decay': args.weight_decay_gp},
         {'params': model.gp_layer.hyperparameters()},
         {'params': model.gp_layer.variational_parameters()},
         {'params': likelihood.parameters()},

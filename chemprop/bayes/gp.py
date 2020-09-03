@@ -91,11 +91,17 @@ def initial_inducing_points(
     """
     inducing_points = []
     for batch in train_data_loader:
+        if len(inducing_points) > args.num_inducing_points:
+            break
         mol_batch = batch.batch_graph()
         inducing_points.extend(feature_extractor(mol_batch))
     inducing_points = torch.stack(inducing_points)[:args.num_inducing_points]
+
+    print('number of inducing points =')
+    print(len(inducing_points))
+
     inducing_points = inducing_points.repeat(args.num_tasks,1,1)
-    
+
     return inducing_points
     
     
