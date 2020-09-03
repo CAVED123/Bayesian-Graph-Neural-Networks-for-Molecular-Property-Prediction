@@ -19,7 +19,7 @@ from chemprop.train.run_training import run_training
 args = TrainArgs()
 args.from_dict({
     'dataset_type': 'regression',
-    'data_path': '/Users/georgelamb/Documents/GitHub/chempropBayes/data/qm9.csv'
+    'data_path': '/home/willlamb/chempropBayes/data/qm9.csv'
 })
 
 
@@ -39,7 +39,7 @@ args.undirected = False
 args.bias = False
 
 # data
-args.max_data_size = 500
+args.max_data_size = 150000
 args.seed = 0 # seed for data splits
 args.split_type = 'scaffold_balanced'
 args.split_sizes = (0.64, 0.16, 0.2)
@@ -50,54 +50,45 @@ args.metric = 'mae'
 ################################################
 
 # names and directories
-args.save_dir = '/Users/georgelamb/Documents/checkpoints/gp'
-args.results_dir = '/Users/georgelamb/Documents/results/gp'
-args.wandb_proj = 'gp_tune'
-args.wandb_name = 'gp_practice'
-args.checkpoint_path = '/Users/georgelamb/Documents/checkpoints/map'
+args.save_dir = '/home/willlamb/checkpoints/dun'
+args.results_dir = '/home/willlamb/results/dun'
+args.wandb_proj = 'official_dun'
+args.wandb_name = 'dun'
+args.checkpoint_path = None
 
 # ensembling and samples
 args.ensemble_size = 1
-args.ensemble_start_idx = 0
+args.ensemble_start_idx = 2
 args.pytorch_seeds = [0,1,2,3,4]
-args.samples = 1
+args.samples = 100
 
 
-### gp ###
+### dun ###
 
-args.gp = True
+args.dun = True
+args.depth_min = 1
+args.depth_max = 5
+
 args.epochs = 0
+args.epochs_dun = 350
 
-args.batch_size_gp = 50
+args.batch_size_dun = 50
+args.lr_dun_min = 1e-4
+args.lr_dun_max = 1e-3
+args.prior_sig_dun = 0.05
 
-args.warmup_epochs_gp = 2
-args.noam_epochs_gp = 4
-args.epochs_gp = 20
+args.rho_min_dun = -5.5
+args.rho_max_dun = -5
+args.samples_dun = 5
 
-args.init_lr_gp = 1e-4
-args.max_lr_gp = 1e-3
-args.final_lr_gp = 1e-4
+args.presave_dun = 150
 
-args.num_inducing_points = 100
-
+args.log_cat_init = 0
 
 
 ################################################
 
 # run
 results = run_training(args)
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

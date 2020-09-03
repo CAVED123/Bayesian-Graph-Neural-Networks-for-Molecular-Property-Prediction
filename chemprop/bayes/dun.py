@@ -1,6 +1,12 @@
+from typing import List
+
+import torch
+import torch.nn as nn
+
+from chemprop.args import TrainArgs
+from chemprop.data import MoleculeDataLoader, MoleculeDataset, StandardScaler
 
 import numpy as np
-import torch
 
 
 
@@ -25,3 +31,40 @@ def neg_log_likeDUN(output, target, sigma, cat):
     expectation = (pre_expectation * cat).sum()
     
     return expectation
+
+
+
+
+def predict_MCdepth(
+            model: nn.Module,
+            data_loader: MoleculeDataLoader,
+            args: TrainArgs,
+            scaler: StandardScaler,
+            d) -> List[List[float]]:
+
+    """
+    makes a random prediction given a certain depth, d
+    """
+    
+    # set model to eval mode
+    model.eval()
+    
+    preds = []
+
+    for batch in data_loader:
+        batch: MoleculeDataset
+        mol_batch, features_batch = batch.batch_graph(), batch.features()
+
+        with torch.no_grad():
+            _, batch_preds_list, _, _ = model(mol_batch, features_batch, sample=True)
+    
+        batch_preds = batch_preds_list[d]
+        batch_preds = batch_preds.data.cpu().numpy()
+
+        if scaler is not None:
+            batch_preds = scaler.inverse_transform(batch_preds)
+
+        batch_preds = batch_preds.tolist()
+        preds.extend(batch_preds)
+
+    return preds

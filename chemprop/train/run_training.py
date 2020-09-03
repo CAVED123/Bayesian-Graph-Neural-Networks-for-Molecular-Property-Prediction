@@ -29,7 +29,7 @@ from .bayes_tr.sgld_tr import train_sgld
 from .bayes_tr.gp_tr import train_gp
 from .bayes_tr.bbp_tr import train_bbp
 from .bayes_tr.dun_tr import train_dun
-from chemprop.bayes import predict_std_gp
+from chemprop.bayes import predict_std_gp, predict_MCdepth
 
 
 
@@ -365,7 +365,20 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
                 if args.dun:
                     log_cat = model.log_cat.detach().cpu().numpy()
                     cat = np.exp(log_cat) / np.sum(np.exp(log_cat))    
-                    np.savez(os.path.join(results_dir, f'cat_{sample_idx}'), cat)    
+                    np.savez(os.path.join(results_dir, f'cat_{sample_idx}'), cat)
+
+
+                    # samples from categorical dist and saves a depth MC sample
+                    depth_sample = np.random.multinomial(1, cat).nonzero()[0][0]
+                    test_preds_MCdepth = predict_MCdepth(
+                        model=model,
+                        data_loader=test_data_loader,
+                        args=args,
+                        scaler=scaler,
+                        d=depth_sample
+                    )
+                    np.savez(os.path.join(results_dir, f'predsMCDEPTH_{sample_idx}'), np.array(test_preds_MCdepth))
+
                 if args.swag:
                     log_noise = model.base.log_noise
                 else:

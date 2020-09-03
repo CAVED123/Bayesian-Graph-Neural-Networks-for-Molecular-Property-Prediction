@@ -87,28 +87,27 @@ class MPNEncoderDUN(nn.Module):
         
         mol_vecs_list = []        
         # Message passing
-        for depth in range(self.depth_max - 1):
-            nei_a_message = index_select_ND(message, a2b)  # num_atoms x max_num_bonds x hidden
-            a_message = nei_a_message.sum(dim=1)  # num_atoms x hidden
-            rev_message = message[b2revb]  # num_bonds x hidden
-            message = a_message[b2a] - rev_message  # num_bonds x hidden
-
-
-
+        for depth in range(self.depth_max):
             
-            ##### LAYER FOR HIDDEN STATE UPDATES #####
-            message, kl = self.W_h(message, sample)
-            if depth == self.depth_max - 2:
-                tkl += kl # ONLY ADD ON KL LOSS ONCE
-            
-            message = self.act_func(input + message)  # num_bonds x hidden_size
-            message = self.dropout_layer(message)  # num_bonds x hidden
-            ##########################################
+            if depth != 0:
+                nei_a_message = index_select_ND(message, a2b)  # num_atoms x max_num_bonds x hidden
+                a_message = nei_a_message.sum(dim=1)  # num_atoms x hidden
+                rev_message = message[b2revb]  # num_bonds x hidden
+                message = a_message[b2a] - rev_message  # num_bonds x hidden
+                
+                ##### LAYER FOR HIDDEN STATE UPDATES #####
+                message, kl = self.W_h(message, sample)
+                if depth == self.depth_max - 1:
+                    tkl += kl # ONLY ADD ON KL LOSS ONCE
+                
+                message = self.act_func(input + message)  # num_bonds x hidden_size
+                message = self.dropout_layer(message)  # num_bonds x hidden
+                ##########################################
         
         
 
             # save outputs for final 4 depths
-            if depth >= self.depth_min - 2:
+            if depth >= self.depth_min - 1:
             
                 nei_a_message = index_select_ND(message, a2b)  # num_atoms x max_num_bonds x hidden
                 a_message = nei_a_message.sum(dim=1)  # num_atoms x hidden
@@ -116,7 +115,7 @@ class MPNEncoderDUN(nn.Module):
                 
                 ##### LAYER FOR ATOM REPRESENTATION #####
                 atom_hiddens, kl = self.W_o(a_input, sample)
-                if depth == self.depth_max - 2:
+                if depth == self.depth_max - 1:
                     tkl += kl # ONLY ADD ON KL LOSS ONCE       
                 atom_hiddens = self.act_func(atom_hiddens)  # num_atoms x hidden
                 atom_hiddens = self.dropout_layer(atom_hiddens)  # num_atoms x hidden

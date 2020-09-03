@@ -124,10 +124,10 @@ class MoleculeModelDUN(nn.Module):
         cat_reshape = cat.reshape(len(cat),1,1)
         output = torch.sum(cat_reshape*output_list,0)
 
-        # add categorical kl to tkl
-        tkl += (torch.sum(cat*torch.log(cat*len(cat)))).item()
+        # categorical kl
+        dkl = (torch.sum(cat*torch.log(cat*len(cat)))).item()
 
-        return output, output_list, tkl
+        return output, output_list, tkl, dkl
         
 
 

@@ -217,7 +217,7 @@ class TrainArgs(CommonArgs):
     # Model arguments
     bias: bool = False  # Whether to add bias to linear layers
     hidden_size: int = 300  # Dimensionality of hidden layers in MPN
-    depth: int = 3  # Number of message passing steps
+    depth: int = 5  # Number of message passing steps
     activation: Literal['ReLU', 'LeakyReLU', 'PReLU', 'tanh', 'SELU', 'ELU'] = 'ReLU'  # Activation function
     atom_messages: bool = False  # Centers messages on atoms instead of on bonds
     undirected: bool = False  # Undirected edges (always sum the two relevant bond vectors)
