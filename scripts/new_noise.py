@@ -19,7 +19,7 @@ from chemprop.train.new_noise import new_noise
 args = TrainArgs()
 args.from_dict({
     'dataset_type': 'regression',
-    'data_path': '/home/willlamb/chempropBayes/data/qm9.csv'
+    'data_path': '/Users/georgelamb/Documents/GitHub/chempropBayes/data/qm9.csv'
 })
 
 
@@ -54,7 +54,9 @@ args.metric = 'mae'
 #args.results_dir = '/home/willlamb/results/map'
 #args.wandb_proj = 'official1'
 #args.wandb_name = 'map'
-args.checkpoint_path = '/home/willlamb/checkpoints/map'
+args.method = 'map'
+args.checkpoint_path = '/Users/georgelamb/Documents/checkpoints/map' # SET THIS TO MAP FOR SWAG AND SGLD
+args.results_dir = '/Users/georgelamb/Documents/results/map'
 
 # ensembling and samples
 args.ensemble_size = 5
