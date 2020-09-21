@@ -12,6 +12,7 @@ from torch.optim.lr_scheduler import ExponentialLR
 from torch.optim import Adam, SGD
 import wandb
 import copy
+import scipy.stats as stats
 
 from .evaluate import evaluate, evaluate_predictions
 from .predict import predict
@@ -177,41 +178,15 @@ def new_noise(args: TrainArgs, logger: Logger = None) -> List[float]:
         makedirs(results_dir)
 
         # train_preds, train_targets
-        train_preds = predict(
-            model=model,
-            data_loader=train_data_loader,
-            args=args,
-            scaler=scaler,
-            test_data=False,
-            bbp_sample=False)
-        train_preds = np.array(train_preds)
-        train_targets = np.array(train_targets)
 
-        # compute noise
+        #train_targets = np.array(train_targets)
 
-        props = [0.035, 0.03, 0.02, 0.025, 0.025, 0.05, 0.02, 0.035, 0.04, 0.04, 0.04, 0.04]
-        noise = np.ones(12)
-        for task in range(12):
-            abs_errors = np.abs(train_preds[:,task] - train_targets[:,task])
-            prop = props[task]
-            trimmed = np.sort(abs_errors)[:round((1-prop)*len(abs_errors))]
-            noise[task] = np.sqrt(np.mean((trimmed**2)))
+        # compute tstats
+        #tstats = np.ones((12,3))
+        #for task in range(12):
+        #    resid = train_preds[:,task] - train_targets[:,task]
+        #    tstats[task] = np.array(stats.t.fit(resid, floc=0.0))
 
-        # BROOKS METHOD: robust stdev estimate
-        #noise_list = np.ones((30,12))
-        #for estimate in range(30):
-
-            # sample 100 points from test data
-        #    idx = np.random.choice(len(train_preds), size=100, replace=False)
-
-            # compute stdev and add to list
-        #    abs_errors = np.abs(train_preds[idx] - train_targets[idx])
-        #    noise_list[estimate] = np.sqrt(np.mean((abs_errors**2),0))
-
-
-        # compute median
-        #noise_list = np.sort(noise_list, 0)
-        #noise = noise_list[14]
 
         ##################################
         ########## Inner loop over samples
@@ -219,11 +194,22 @@ def new_noise(args: TrainArgs, logger: Logger = None) -> List[float]:
 
         for sample_idx in range(args.samples):
 
-            # save nosie down
-            np.savez(os.path.join(results_dir, f'noise_{sample_idx}'), noise)
 
-        print('done one')
-            
+            train_preds = predict(
+                model=model,
+                data_loader=train_data_loader,
+                args=args,
+                scaler=scaler,
+                test_data=False,
+                bbp_sample=False)
+            train_preds = np.array(train_preds)
+
+            # save down
+            np.savez(os.path.join(results_dir, f'preds_{sample_idx}'), train_preds)
+
+            print('done one')
+
+
             
             
 
