@@ -1,4 +1,4 @@
-# script to generate gp results
+# script to generate post hoc aleatoric noise
 # NOTE: MUST CHANGE QM9 TO qm9 WHEN RUNNING ON CLUSTER
 # NOTE: checkpoint folder (save_dir) must be created before running
 
@@ -13,13 +13,13 @@ print(torch.cuda.is_available())
 
 # imports
 from chemprop.args import TrainArgs
-from chemprop.train.run_training import run_training
+from chemprop.train.new_noise import new_noise
 
 # instantiate args class and load from dict
 args = TrainArgs()
 args.from_dict({
     'dataset_type': 'regression',
-    'data_path': '/home/willlamb/chempropBayes/data/qm9.csv'
+    'data_path': '/Users/georgelamb/Documents/GitHub/chempropBayes/data/qm9.csv'
 })
 
 
@@ -39,7 +39,7 @@ args.undirected = False
 args.bias = False
 
 # data
-args.max_data_size = 150000
+args.max_data_size = 150000 # full data set
 args.seed = 0 # seed for data splits
 args.split_type = 'scaffold_balanced'
 args.split_sizes = (0.64, 0.16, 0.2)
@@ -50,55 +50,19 @@ args.metric = 'mae'
 ################################################
 
 # names and directories
-args.save_dir = '/home/willlamb/checkpoints_temp/gp'
-args.results_dir = '/home/willlamb/results_temp/gp'
-args.wandb_proj = 'tempGP'
-args.wandb_name = 'gpwd'
-args.checkpoint_path = '/home/willlamb/checkpoints/map'
+#args.save_dir = '/home/willlamb/checkpoints/map'
+#args.results_dir = '/home/willlamb/results/map'
+#args.wandb_proj = 'official1'
+#args.wandb_name = 'map'
+args.method = 'gp'
+args.checkpoint_path = '/Users/georgelamb/Documents/checkpoints/gp' # SET THIS TO MAP FOR SWAG AND SGLD
+args.results_dir = '/Users/georgelamb/Documents/results/gp'
 
 # ensembling and samples
-args.ensemble_size = 1
-args.ensemble_start_idx = 2
-args.pytorch_seeds = [0,1,2,3,4]
-args.samples = 1
-
-
-### gp ###
-
-args.gp = True
-args.epochs = 0
-
-args.batch_size_gp = 50
-
-args.warmup_epochs_gp = 2
-args.noam_epochs_gp = 100
-args.epochs_gp = 200
-
-args.init_lr_gp = 1e-4
-args.max_lr_gp = 1e-3
-args.final_lr_gp = 1e-4
-
-args.num_inducing_points = 1200 # 12 mins an epoch (slower gpus)
-
-args.weight_decay_gp = 0.01
-
+args.ensemble_size = 5
+args.samples = 30
 
 ################################################
 
 # run
-results = run_training(args)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+new_noise(args)
