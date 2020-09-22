@@ -74,7 +74,7 @@ def predict(model: nn.Module,
         # Make predictions
         with torch.no_grad():
             if gp:
-                batch_preds = model(mol_batch, features_batch).sample()
+                batch_preds = model(mol_batch, features_batch).mean
             elif bbp:
                 if dun:
                     batch_preds, _, _, _ = model(mol_batch, features_batch, sample=bbp_sample)

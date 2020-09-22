@@ -54,13 +54,13 @@ args.metric = 'mae'
 #args.results_dir = '/home/willlamb/results/map'
 #args.wandb_proj = 'official1'
 #args.wandb_name = 'map'
-args.method = 'gp'
-args.checkpoint_path = '/Users/georgelamb/Documents/checkpoints/gp' # SET THIS TO MAP FOR SWAG AND SGLD
-args.results_dir = '/Users/georgelamb/Documents/results/gp'
+args.method = 'map'
+args.checkpoint_path = '/Users/georgelamb/Documents/checkpoints/map' # SET THIS TO MAP FOR SWAG AND SGLD
+args.results_dir = '/Users/georgelamb/Documents/results/map'
 
 # ensembling and samples
 args.ensemble_size = 5
-args.samples = 30
+args.samples = 1
 
 ################################################
 

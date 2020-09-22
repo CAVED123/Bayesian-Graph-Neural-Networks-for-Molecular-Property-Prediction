@@ -178,14 +178,21 @@ def new_noise(args: TrainArgs, logger: Logger = None) -> List[float]:
         makedirs(results_dir)
 
         # train_preds, train_targets
-
-        #train_targets = np.array(train_targets)
+        train_preds = predict(
+            model=model,
+            data_loader=train_data_loader,
+            args=args,
+            scaler=scaler,
+            test_data=False,
+            bbp_sample=False)
+        train_preds = np.array(train_preds)
+        train_targets = np.array(train_targets)
 
         # compute tstats
-        #tstats = np.ones((12,3))
-        #for task in range(12):
-        #    resid = train_preds[:,task] - train_targets[:,task]
-        #    tstats[task] = np.array(stats.t.fit(resid, floc=0.0))
+        tstats = np.ones((12,3))
+        for task in range(12):
+            resid = train_preds[:,task] - train_targets[:,task]
+            tstats[task] = np.array(stats.t.fit(resid, floc=0.0))
 
 
         ##################################
@@ -194,18 +201,8 @@ def new_noise(args: TrainArgs, logger: Logger = None) -> List[float]:
 
         for sample_idx in range(args.samples):
 
-
-            train_preds = predict(
-                model=model,
-                data_loader=train_data_loader,
-                args=args,
-                scaler=scaler,
-                test_data=False,
-                bbp_sample=False)
-            train_preds = np.array(train_preds)
-
             # save down
-            np.savez(os.path.join(results_dir, f'preds_{sample_idx}'), train_preds)
+            np.savez(os.path.join(results_dir, f'tstats_{sample_idx}'), tstats)
 
             print('done one')
 
