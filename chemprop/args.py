@@ -129,6 +129,7 @@ class TrainArgs(CommonArgs):
     ensemble_start_idx: int = 0
     pytorch_seeds = [0,1,2,3,4]
     samples = 30
+    pdts = False
 
     # MAP
     warmup_epochs: float = 2.0
