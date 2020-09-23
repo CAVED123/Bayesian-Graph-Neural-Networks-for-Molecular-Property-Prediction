@@ -240,8 +240,10 @@ def train(model: nn.Module,
                 else:
                     wandb.log({"Negative log likelihood (scaled)": loss_avg}, commit=False)
             
-            
-            wandb.log({"Learning rate": lrs[0]}, commit=False)
+            if args.pdts:
+                wandb.log({"Learning rate": lrs[0]}, commit=True)
+            else:
+                wandb.log({"Learning rate": lrs[0]}, commit=False)
             
         #print(n_iter)
     return n_iter
