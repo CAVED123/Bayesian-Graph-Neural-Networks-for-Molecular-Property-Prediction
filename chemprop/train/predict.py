@@ -3,6 +3,7 @@ from typing import List
 import torch
 import torch.nn as nn
 from tqdm import tqdm
+import numpy as np
 
 from chemprop.args import TrainArgs
 from chemprop.data import MoleculeDataLoader, MoleculeDataset, StandardScaler
@@ -16,6 +17,7 @@ def predict(model: nn.Module,
             disable_progress_bar: bool = False,
             scaler: StandardScaler = None,
             test_data: bool = False,
+            gp_sample: bool = False,
             bbp_sample: bool = False) -> List[List[float]]:
     """
     Makes predictions on a dataset using an ensemble of models.
@@ -29,6 +31,12 @@ def predict(model: nn.Module,
     :return: A list of lists of predictions. The outer list is examples
     while the inner list is tasks.
     """
+
+    ### seed to ensure single network sampled across batches
+    if args.thompson:
+        network_seed = np.random.randint(1e15)
+
+
     
     ########## detection of gp or bayeslinear layer or DUN
     
@@ -74,11 +82,16 @@ def predict(model: nn.Module,
         # Make predictions
         with torch.no_grad():
             if gp:
-                batch_preds = model(mol_batch, features_batch).mean
+                if gp_sample:
+                    batch_preds = model(mol_batch, features_batch).sample()
+                else:
+                    batch_preds = model(mol_batch, features_batch).mean
             elif bbp:
                 if dun:
                     batch_preds, _, _, _ = model(mol_batch, features_batch, sample=bbp_sample)
                 else:
+                    if args.thompson:
+                        torch.manual_seed(network_seed)
                     batch_preds, _ = model(mol_batch, features_batch, sample=bbp_sample)
             else:
                 batch_preds = model(mol_batch, features_batch)
