@@ -15,7 +15,7 @@ from chemprop.train.pdts import pdts
 args = TrainArgs()
 args.from_dict({
     'dataset_type': 'regression',
-    'data_path': '/Users/georgelamb/Documents/GitHub/chempropBayes/data/qm9.csv'
+    'data_path': '/home/willlamb/chempropBayes/data/qm9.csv'
 })
 
 
@@ -38,7 +38,7 @@ args.bias = False
 args.max_data_size = 100000
 args.data_seeds = [0,1,2,3,4]
 args.split_type = 'random'
-args.split_sizes = (0.0005, 0.9995)
+args.split_sizes = (0.015, 0.985)
 
 # metric
 args.metric = 'mae'
@@ -49,24 +49,31 @@ args.pytorch_seeds = [0,1,2,3,4]
 ################################################
 
 # names and directories
-args.results_dir = '/Users/georgelamb/Documents/results_pdts/map_greedy'
-args.wandb_proj = 'pdts_practice'
-args.wandb_name = 'map_greedy'
+args.results_dir = '/home/willlamb/results_pdts/bbp_greedy'
+args.save_dir = '/home/willlamb/checkpoints_pdts/bbp_greedy'
+args.checkpoint_path = '/home/willlamb/checkpoints_pdts/map_greedy'
+args.wandb_proj = 'lanterne_bbp'
+args.wandb_name = 'bbp_greedy'
+args.thompson = False
 
 
-### map ###
-args.samples = 1
+### bbp ###
+args.bbp = True
+args.samples = 50
 
 args.pdts = True
 args.pdts_batches = 30
 
-args.epochs_init_map = 100
-args.epochs = 30
+args.epochs_init_map = 0
+args.epochs_init = 50
+args.epochs = 50
 
-args.lr = 5e-4
+args.lr = 2e-4
 
-args.init_log_noise = -2
-args.weight_decay = 0.01
+args.prior_sig_bbp = 0.5
+args.rho_min_bbp = -5.5
+args.rho_max_bbp = -5
+args.samples_bbp = 5
 
 
 ################################################

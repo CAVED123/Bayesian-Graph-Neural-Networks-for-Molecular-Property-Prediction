@@ -12,6 +12,7 @@ from torch.optim.lr_scheduler import ExponentialLR
 from torch.optim import Adam, SGD
 import wandb
 import copy
+import gpytorch
 
 from chemprop.data.data import MoleculeDatapoint, MoleculeDataset
 
@@ -35,6 +36,7 @@ from .bayes_tr.dun_tr import train_dun
 from chemprop.bayes import predict_std_gp, predict_MCdepth
 from chemprop.models import MoleculeModelBBP
 from chemprop.bayes import BayesLinear
+from chemprop.bayes import GPLayer, DKLMoleculeModel, initial_inducing_points
 
 
 def pdts(args: TrainArgs, model_idx):
@@ -49,6 +51,10 @@ def pdts(args: TrainArgs, model_idx):
 
     ######## set up all logging ########
     logger = None
+    
+    # make save_dir
+    save_dir = os.path.join(args.save_dir, f'model_{model_idx}')
+    makedirs(save_dir)
 
     # make results_dir
     results_dir = args.results_dir
@@ -167,7 +173,7 @@ def pdts(args: TrainArgs, model_idx):
     # FIRST THOMPSON ITERATION
 
     ### scores array
-    ptds_scores = np.ones(args.pdts_batches)
+    ptds_scores = np.ones(args.pdts_batches + 1)
     batch_no = 0
     
     ### fill for batch 0
@@ -179,6 +185,8 @@ def pdts(args: TrainArgs, model_idx):
     wandb.log({"Proportion of top 1%": prop, "batch_no": batch_no}, commit=False)
 
     ### train MAP posterior
+    gp_switch = False
+    likelihood = None
     bbp_switch = None
     n_iter = 0
     for epoch in range(args.epochs_init_map):
@@ -192,6 +200,14 @@ def pdts(args: TrainArgs, model_idx):
             n_iter=n_iter,
             bbp_switch = bbp_switch
         )
+        # save to save_dir
+        if epoch == args.epochs_init_map - 1:
+            save_checkpoint(os.path.join(save_dir, f'model_{batch_no}.pt'), model, scaler, features_scaler, args)
+    # if X load from checkpoint path
+    if args.bbp or args.gp:
+        model = load_checkpoint(args.checkpoint_path + f'/model_{model_idx}/model_{batch_no}.pt', device=args.device, logger=None)
+
+
 
     ########## BBP
     if args.bbp:
@@ -227,9 +243,62 @@ def pdts(args: TrainArgs, model_idx):
                 n_iter=n_iter,
                 bbp_switch = bbp_switch
             )
+    
+
+
+    ########## GP
+    if args.gp:
+        # feature_extractor
+        model.featurizer = True
+        feature_extractor = model
+        # inducing points
+        inducing_points = initial_inducing_points(
+            train_data_loader,
+            feature_extractor,
+            args
+            )
+        # GP layer
+        gp_layer = GPLayer(inducing_points, args.num_tasks)
+        # full DKL model
+        model = copy.deepcopy(DKLMoleculeModel(feature_extractor, gp_layer))
+        # likelihood (rank 0 restricts to diagonal matrix)
+        likelihood = gpytorch.likelihoods.MultitaskGaussianLikelihood(num_tasks=12, rank=0)
+        # model and likelihood to CUDA
+        if args.cuda:
+            model.cuda()
+            likelihood.cuda()
+        # loss object
+        loss_func = gpytorch.mlls.VariationalELBO(likelihood, model.gp_layer, num_data=args.train_data_size)
+        # optimiser and scheduler
+        params_list = [
+            {'params': model.feature_extractor.parameters(), 'weight_decay': args.weight_decay_gp},
+            {'params': model.gp_layer.hyperparameters()},
+            {'params': model.gp_layer.variational_parameters()},
+            {'params': likelihood.parameters()},
+        ]    
+        optimizer = torch.optim.Adam(params_list, lr = args.lr)
+        scheduler = scheduler_const([args.lr])
+
+        gp_switch = True
+        n_iter = 0
+        for epoch in range(args.epochs_init):
+            n_iter = train(
+                model=model,
+                data_loader=train_data_loader,
+                loss_func=loss_func,
+                optimizer=optimizer,
+                scheduler=scheduler,
+                args=args,
+                n_iter=n_iter,
+                gp_switch=gp_switch,
+                likelihood=likelihood
+            )
+
+
 
     ### find top_idx
-    sum_test_preds = np.zeros((len(test_orig), args.num_tasks))
+    top_idx = [] # need for thom
+    sum_test_preds = np.zeros((len(test_orig), args.num_tasks)) # need for greedy
     for sample in range(args.samples):
         test_preds = predict(
             model=model,
@@ -237,11 +306,26 @@ def pdts(args: TrainArgs, model_idx):
             args=args,
             scaler=scaler,
             test_data=True,
+            gp_sample = args.thompson,
             bbp_sample=True)
+        test_preds = np.array(test_preds)
+        # thompson bit
+        rank = 0
+        while args.thompson and len(top_idx) == sample:  
+            top_unique_molecule = np.argsort(-test_preds[:,0])[rank]
+            rank += 1
+            if top_unique_molecule not in top_idx:
+                top_idx.append(top_unique_molecule)
+        # add to sum_test_preds
         sum_test_preds += test_preds
-    sum_test_preds /= args.samples
-    test_preds = np.array(sum_test_preds)
-    top_idx = np.argsort(-test_preds[:,0])[:50]
+        # print
+        print('done sample ' + str(sample))
+    # final top_idx
+    if args.thompson:
+        top_idx = np.array(top_idx)
+    else:
+        sum_test_preds /= args.samples
+        top_idx = np.argsort(-sum_test_preds[:,0])[:50]
 
     ### transfer from test to train
     top_idx = -np.sort(-top_idx)
@@ -249,6 +333,8 @@ def pdts(args: TrainArgs, model_idx):
         train_orig.append(test_orig.pop(idx))
     train_data, test_data = copy.deepcopy(MoleculeDataset(train_orig)), copy.deepcopy(MoleculeDataset(test_orig))
     args.train_data_size = len(train_data)
+    if args.gp:
+        loss_func = gpytorch.mlls.VariationalELBO(likelihood, model.gp_layer, num_data=args.train_data_size)
     print(args.train_data_size)
 
     ### standardise features (train and test; using original features_scaler)
@@ -289,7 +375,7 @@ def pdts(args: TrainArgs, model_idx):
     ########## thompson sampling loop
     ##################################
     
-    for batch_no in range(1, args.pdts_batches):
+    for batch_no in range(1, args.pdts_batches+1):
         
         ### fill in ptds_scores
         SMILES_train = np.array(train_data.smiles())
@@ -310,11 +396,18 @@ def pdts(args: TrainArgs, model_idx):
                 scheduler=scheduler,
                 args=args,
                 n_iter=n_iter,
+                gp_switch=gp_switch,
+                likelihood=likelihood,
                 bbp_switch = bbp_switch
             )
+            # save to save_dir
+            if epoch == args.epochs - 1:
+                save_checkpoint(os.path.join(save_dir, f'model_{batch_no}.pt'), model, scaler, features_scaler, args)
+        # if swag, sgld, load checkpoint
 
         ### find top_idx
-        sum_test_preds = np.zeros((len(test_orig), args.num_tasks))
+        top_idx = [] # need for thom
+        sum_test_preds = np.zeros((len(test_orig), args.num_tasks)) # need for greedy
         for sample in range(args.samples):
             test_preds = predict(
                 model=model,
@@ -322,11 +415,26 @@ def pdts(args: TrainArgs, model_idx):
                 args=args,
                 scaler=scaler,
                 test_data=True,
+                gp_sample = args.thompson,
                 bbp_sample=True)
+            test_preds = np.array(test_preds)
+            # thompson bit
+            rank = 0
+            while args.thompson and len(top_idx) == sample:  
+                top_unique_molecule = np.argsort(-test_preds[:,0])[rank]
+                rank += 1
+                if top_unique_molecule not in top_idx:
+                    top_idx.append(top_unique_molecule)
+            # add to sum_test_preds
             sum_test_preds += test_preds
-        sum_test_preds /= args.samples
-        test_preds = np.array(sum_test_preds)
-        top_idx = np.argsort(-test_preds[:,0])[:50]
+            # print
+            print('done sample ' + str(sample))
+        # final top_idx
+        if args.thompson:
+            top_idx = np.array(top_idx)
+        else:
+            sum_test_preds /= args.samples
+            top_idx = np.argsort(-sum_test_preds[:,0])[:50]
 
         ### transfer from test to train
         top_idx = -np.sort(-top_idx)
@@ -334,6 +442,8 @@ def pdts(args: TrainArgs, model_idx):
             train_orig.append(test_orig.pop(idx))
         train_data, test_data = copy.deepcopy(MoleculeDataset(train_orig)), copy.deepcopy(MoleculeDataset(test_orig))
         args.train_data_size = len(train_data)
+        if args.gp:
+            loss_func = gpytorch.mlls.VariationalELBO(likelihood, model.gp_layer, num_data=args.train_data_size)
         print(args.train_data_size)
 
         ### standardise features (train and test; using original features_scaler)
