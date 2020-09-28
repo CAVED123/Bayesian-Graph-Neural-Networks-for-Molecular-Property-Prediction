@@ -94,6 +94,8 @@ def predict(model: nn.Module,
                         torch.manual_seed(network_seed)
                     batch_preds, _ = model(mol_batch, features_batch, sample=bbp_sample)
             else:
+                if args.thompson:
+                    torch.manual_seed(network_seed)
                 batch_preds = model(mol_batch, features_batch)
 
         batch_preds = batch_preds.data.cpu().numpy()
