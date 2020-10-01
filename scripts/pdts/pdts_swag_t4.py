@@ -46,38 +46,42 @@ args.metric = 'mae'
 # run seeds
 args.pytorch_seeds = [0,1,2,3,4]
 
+
 ################################################
 
 # names and directories
-args.results_dir = '/home/willlamb/results_pdts/bbp_thom'
-args.save_dir = '/home/willlamb/checkpoints_pdts/bbp_thom'
+args.results_dir = '/home/willlamb/results_pdts/swag_thom2'
+args.save_dir = '/home/willlamb/checkpoints_pdts/swag_thom2'
 args.checkpoint_path = '/home/willlamb/checkpoints_pdts/map_greedy'
-args.wandb_proj = 'lanterne_bbp'
-args.wandb_name = 'bbp_thom'
+args.wandb_proj = 'lanterne_swag2'
+args.wandb_name = 'swag_thom'
 args.thompson = True
 
-
-### bbp ###
-args.bbp = True
+### swag ###
+args.swag = True
 args.samples = 50
 
 args.pdts = True
 args.pdts_batches = 30
 
 args.epochs_init_map = 0
-args.epochs_init = 1500
-args.epochs = 200
+args.epochs = 0
 
+args.lr_swag = 1e-5
 args.lr = 1e-4
+args.weight_decay_swag = 0.01
+args.momentum_swag = 0
 
-args.prior_sig_bbp = 0.15
-args.rho_min_bbp = -5.5
-args.rho_max_bbp = -5
-args.samples_bbp = 5
+args.burnin_swag = 300
+args.epochs_swag = 400
+args.loss_threshold = -5
 
+args.cov_mat = True
+args.max_num_models = 20
+args.block = False
 
 ################################################
 
 
 # run
-results = pdts(args, model_idx = 0)
+results = pdts(args, model_idx = 4)

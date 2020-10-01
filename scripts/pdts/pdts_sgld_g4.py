@@ -46,38 +46,34 @@ args.metric = 'mae'
 # run seeds
 args.pytorch_seeds = [0,1,2,3,4]
 
+
 ################################################
 
 # names and directories
-args.results_dir = '/home/willlamb/results_pdts/bbp_thom'
-args.save_dir = '/home/willlamb/checkpoints_pdts/bbp_thom'
+args.results_dir = '/home/willlamb/results_pdts/sgld_greedy'
+args.save_dir = '/home/willlamb/checkpoints_pdts/sgld_greedy'
 args.checkpoint_path = '/home/willlamb/checkpoints_pdts/map_greedy'
-args.wandb_proj = 'lanterne_bbp'
-args.wandb_name = 'bbp_thom'
-args.thompson = True
+args.wandb_proj = 'lanterne_sgld'
+args.wandb_name = 'sgld_greedy'
+args.thompson = False
 
-
-### bbp ###
-args.bbp = True
-args.samples = 50
+### sgld ###
+args.sgld = True
+args.samples = 10
 
 args.pdts = True
 args.pdts_batches = 30
 
 args.epochs_init_map = 0
-args.epochs_init = 1500
-args.epochs = 200
+args.epochs = 0
+args.mix_epochs = 50
 
+args.lr_max_sgld = 2e-5
 args.lr = 1e-4
-
-args.prior_sig_bbp = 0.15
-args.rho_min_bbp = -5.5
-args.rho_max_bbp = -5
-args.samples_bbp = 5
-
+args.weight_decay_sgld = 0.01
 
 ################################################
 
 
 # run
-results = pdts(args, model_idx = 0)
+results = pdts(args, model_idx = 4)

@@ -245,8 +245,10 @@ def train(model: nn.Module,
             else:
                 wandb.log({"Learning rate": lrs[0]}, commit=False)
             
-        #print(n_iter)
-    return n_iter
+    if args.pdts and args.swag:
+        return loss_avg, n_iter
+    else:
+        return n_iter
 
 
 

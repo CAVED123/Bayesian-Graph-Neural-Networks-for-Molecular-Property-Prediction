@@ -49,12 +49,12 @@ args.pytorch_seeds = [0,1,2,3,4]
 ################################################
 
 # names and directories
-args.results_dir = '/home/willlamb/results_pdts/bbp_thom'
-args.save_dir = '/home/willlamb/checkpoints_pdts/bbp_thom'
+args.results_dir = '/home/willlamb/results_pdts/bbp_greedy'
+args.save_dir = '/home/willlamb/checkpoints_pdts/bbp_greedy'
 args.checkpoint_path = '/home/willlamb/checkpoints_pdts/map_greedy'
 args.wandb_proj = 'lanterne_bbp'
-args.wandb_name = 'bbp_thom'
-args.thompson = True
+args.wandb_name = 'bbp_greedy'
+args.thompson = False
 
 
 ### bbp ###
@@ -80,4 +80,4 @@ args.samples_bbp = 5
 
 
 # run
-results = pdts(args, model_idx = 0)
+results = pdts(args, model_idx = 1)

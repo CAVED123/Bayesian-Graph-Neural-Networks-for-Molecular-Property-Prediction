@@ -38,7 +38,7 @@ args.bias = False
 args.max_data_size = 100000
 args.data_seeds = [0,1,2,3,4]
 args.split_type = 'random'
-args.split_sizes = (0.015, 0.985)
+args.split_sizes = (0.05, 0.95)
 
 # metric
 args.metric = 'mae'
@@ -65,12 +65,12 @@ args.pdts = True
 args.pdts_batches = 30
 
 args.epochs_init_map = 0
-args.epochs_init = 50
-args.epochs = 50
+args.epochs_init = 1500
+args.epochs = 200
 
-args.lr = 2e-4
+args.lr = 1e-4
 
-args.prior_sig_bbp = 0.5
+args.prior_sig_bbp = 0.15
 args.rho_min_bbp = -5.5
 args.rho_max_bbp = -5
 args.samples_bbp = 5

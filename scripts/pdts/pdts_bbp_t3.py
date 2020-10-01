@@ -80,4 +80,4 @@ args.samples_bbp = 5
 
 
 # run
-results = pdts(args, model_idx = 0)
+results = pdts(args, model_idx = 3)
