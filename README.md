@@ -8,7 +8,7 @@ This repo contains Bayesian message passing neural networks for molecular proper
 - Bayes by Backprop
 - Bayes by Backprop + depth uncertainty 
 
-NOTE: THIS README IS UNDER DEVELOPMENT AND WILL BE FINALISED ON 5TH OCTOBER.
+NOTE: THIS README IS UNDER DEVELOPMENT AND WILL BE FINALISED ON 6TH OCTOBER.
 
 **Website:** A web prediction interface with some trained chemprop models is available at [chemprop.csail.mit.edu](chemprop.csail.mit.edu).
 
