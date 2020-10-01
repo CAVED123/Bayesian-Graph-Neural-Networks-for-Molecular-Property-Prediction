@@ -28,8 +28,8 @@ from chemprop.utils import build_optimizer, build_lr_scheduler, get_loss_func, g
     makedirs, save_checkpoint, save_smiles_splits
 from chemprop.bayes_utils import neg_log_like, scheduler_const
 
-from .bayes_tr.swag_tr import train_swag
-from .bayes_tr.sgld_tr import train_sgld
+from .bayes_tr.swag_tstr import train_swag_pdts
+from .bayes_tr.sgld_tstr import train_sgld_pdts
 from .bayes_tr.gp_tr import train_gp
 from .bayes_tr.bbp_tr import train_bbp
 from .bayes_tr.dun_tr import train_dun
@@ -204,7 +204,7 @@ def pdts(args: TrainArgs, model_idx):
         if epoch == args.epochs_init_map - 1:
             save_checkpoint(os.path.join(save_dir, f'model_{batch_no}.pt'), model, scaler, features_scaler, args)
     # if X load from checkpoint path
-    if args.bbp or args.gp:
+    if args.bbp or args.gp or args.swag or args.sgld:
         model = load_checkpoint(args.checkpoint_path + f'/model_{model_idx}/model_{batch_no}.pt', device=args.device, logger=None)
 
 
@@ -293,6 +293,36 @@ def pdts(args: TrainArgs, model_idx):
                 gp_switch=gp_switch,
                 likelihood=likelihood
             )
+        
+
+
+    ########## SWAG
+    if args.swag:
+        model = train_swag_pdts(
+            model,
+            train_data_loader,
+            loss_func,
+            scaler,
+            features_scaler,
+            args,
+            save_dir,
+            batch_no
+        )
+
+
+
+    ########## SGLD
+    if args.sgld:
+        model = train_sgld_pdts(
+            model,
+            train_data_loader,
+            loss_func,
+            scaler,
+            features_scaler,
+            args,
+            save_dir,
+            batch_no
+        )
 
 
 
@@ -300,6 +330,15 @@ def pdts(args: TrainArgs, model_idx):
     top_idx = [] # need for thom
     sum_test_preds = np.zeros((len(test_orig), args.num_tasks)) # need for greedy
     for sample in range(args.samples):
+        
+        # draw model from SWAG posterior
+        if args.swag:
+            model.sample(scale=1.0, cov=args.cov_mat, block=args.block)
+
+        # retrieve sgld sample
+        if args.sgld:
+            model = load_checkpoint(args.save_dir + f'/model_{model_idx}/model_{batch_no}/model_{sample}.pt', device=args.device, logger=logger)
+        
         test_preds = predict(
             model=model,
             data_loader=test_data_loader,
@@ -311,7 +350,14 @@ def pdts(args: TrainArgs, model_idx):
         test_preds = np.array(test_preds)
         # thompson bit
         rank = 0
-        while args.thompson and len(top_idx) == sample:  
+        
+        # base length
+        if args.sgld:
+            base_length = 5 * sample + 4
+        else:
+            base_length = sample
+            
+        while args.thompson and (len(top_idx) <= base_length):
             top_unique_molecule = np.argsort(-test_preds[:,0])[rank]
             rank += 1
             if top_unique_molecule not in top_idx:
@@ -404,11 +450,54 @@ def pdts(args: TrainArgs, model_idx):
             if epoch == args.epochs - 1:
                 save_checkpoint(os.path.join(save_dir, f'model_{batch_no}.pt'), model, scaler, features_scaler, args)
         # if swag, sgld, load checkpoint
+        if args.swag or args.sgld:
+            model = load_checkpoint(args.checkpoint_path + f'/model_{model_idx}/model_{batch_no}.pt', device=args.device, logger=None)
+
+
+
+        ########## SWAG
+        if args.swag:
+            model = train_swag_pdts(
+                model,
+                train_data_loader,
+                loss_func,
+                scaler,
+                features_scaler,
+                args,
+                save_dir,
+                batch_no
+            )
+        
+
+
+        ########## SGLD
+        if args.sgld:
+            model = train_sgld_pdts(
+                model,
+                train_data_loader,
+                loss_func,
+                scaler,
+                features_scaler,
+                args,
+                save_dir,
+                batch_no
+            )
+
+
 
         ### find top_idx
         top_idx = [] # need for thom
         sum_test_preds = np.zeros((len(test_orig), args.num_tasks)) # need for greedy
         for sample in range(args.samples):
+
+            # draw model from SWAG posterior
+            if args.swag:
+                model.sample(scale=1.0, cov=args.cov_mat, block=args.block)
+
+            # retrieve sgld sample
+            if args.sgld:
+                model = load_checkpoint(args.save_dir + f'/model_{model_idx}/model_{batch_no}/model_{sample}.pt', device=args.device, logger=logger)
+
             test_preds = predict(
                 model=model,
                 data_loader=test_data_loader,
@@ -420,7 +509,14 @@ def pdts(args: TrainArgs, model_idx):
             test_preds = np.array(test_preds)
             # thompson bit
             rank = 0
-            while args.thompson and len(top_idx) == sample:  
+            
+            # base length
+            if args.sgld:
+                base_length = 5 * sample + 4
+            else:
+                base_length = sample
+            
+            while args.thompson and (len(top_idx) <= base_length):
                 top_unique_molecule = np.argsort(-test_preds[:,0])[rank]
                 rank += 1
                 if top_unique_molecule not in top_idx:

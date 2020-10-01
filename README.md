@@ -1,5 +1,14 @@
-# Molecular Property Prediction
-This repository contains message passing neural networks for molecular property prediction as described in the paper [Analyzing Learned Molecular Representations for Property Prediction](https://pubs.acs.org/doi/abs/10.1021/acs.jcim.9b00237) and as used in the paper [A Deep Learning Approch to Antibiotic Discovery](https://www.cell.com/cell/fulltext/S0092-8674(20)30102-1).
+# Bayesian Molecular Property Prediction
+
+This repo contains Bayesian message passing neural networks for molecular property prediction. The base architecture is described in the paper [Analyzing Learned Molecular Representations for Property Prediction](https://pubs.acs.org/doi/abs/10.1021/acs.jcim.9b00237). We apply the following methods to the base model:
+- A variational GP in place of the final readout layer
+- MC Dropout
+- SWA-Gaussian
+- Stochastic Gradient Langevin Dynamics
+- Bayes by Backprop
+- Bayes by Backprop + depth uncertainty 
+
+NOTE: THIS README IS UNDER DEVELOPMENT AND WILL BE FINALISED ON 5TH OCTOBER.
 
 **Website:** A web prediction interface with some trained chemprop models is available at [chemprop.csail.mit.edu](chemprop.csail.mit.edu).
 

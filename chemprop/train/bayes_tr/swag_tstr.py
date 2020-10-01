@@ -12,35 +12,15 @@ from chemprop.bayes_utils import scheduler_const
 from torch.optim.lr_scheduler import OneCycleLR
 
 
-def train_swag(
+def train_swag_pdts(
         model,
-        train_data,
-        val_data,
-        num_workers,
-        cache,
+        train_data_loader,
         loss_func,
-        metric_func,
         scaler,
         features_scaler,
         args,
-        save_dir):
-
-    # create data loaders for swag (allows different batch size)
-    train_data_loader = MoleculeDataLoader(
-        dataset=train_data,
-        batch_size=args.batch_size_swag,
-        num_workers=num_workers,
-        cache=cache,
-        class_balance=args.class_balance,
-        shuffle=True,
-        seed=args.seed
-    )
-    val_data_loader = MoleculeDataLoader(
-        dataset=val_data,
-        batch_size=args.batch_size_swag,
-        num_workers=num_workers,
-        cache=cache
-    )
+        save_dir,
+        batch_no):
 
     # define no_cov_mat from cov_mat
     if args.cov_mat:
@@ -71,8 +51,8 @@ def train_swag(
     scheduler = OneCycleLR(
         optimizer,
         max_lr = [args.lr_swag, args.lr_swag, args.lr_swag/5],
-        epochs=args.epochs_swag, 
-        steps_per_epoch=-(-args.train_data_size // args.batch_size_swag), 
+        epochs=args.epochs_swag,
+        steps_per_epoch=-(-args.train_data_size // args.batch_size), 
         pct_start=5/args.epochs_swag,
         anneal_strategy='cos', 
         cycle_momentum=False, 
@@ -80,6 +60,11 @@ def train_swag(
         final_div_factor=1/25)
 
     ###################################################################
+
+    # freeze log noise
+    for name, parameter in model.named_parameters():
+        if name == 'log_noise':
+            parameter.requires_grad = False
 
     print("----------SWAG training----------")
     
@@ -89,7 +74,7 @@ def train_swag(
 
         print(f'SWAG epoch {epoch}')
     
-        n_iter = train(
+        loss_avg, n_iter = train(
                 model=model,
                 data_loader=train_data_loader,
                 loss_func=loss_func,
@@ -98,29 +83,14 @@ def train_swag(
                 args=args,
                 n_iter=n_iter
             )
-        
-        val_scores = evaluate(
-                model=model,
-                data_loader=val_data_loader,
-                args=args,
-                num_tasks=args.num_tasks,
-                metric_func=metric_func,
-                dataset_type=args.dataset_type,
-                scaler=scaler
-            )
-        
-        # Average validation score
-        avg_val_score = np.nanmean(val_scores)
-        print(f'Validation {args.metric} = {avg_val_score:.6f}')
-        wandb.log({"Validation MAE": avg_val_score})
 
         # SWAG update
-        if (epoch >= args.burnin_swag) and (avg_val_score < args.val_threshold):
+        if (epoch >= args.burnin_swag) and (loss_avg < args.loss_threshold):
             swag_model.collect_model(model)
             print('***collection***')
 
     # save final swag model
-    save_checkpoint(os.path.join(save_dir, 'model.pt'), swag_model, scaler, features_scaler, args)
+    save_checkpoint(os.path.join(save_dir, f'model_{batch_no}.pt'), swag_model, scaler, features_scaler, args)
 
     return swag_model
 
