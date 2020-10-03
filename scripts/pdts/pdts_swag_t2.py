@@ -67,13 +67,13 @@ args.pdts_batches = 30
 args.epochs_init_map = 0
 args.epochs = 0
 
-args.lr_swag = 1e-5
+args.lr_swag = 2e-5
 args.lr = 1e-4
 args.weight_decay_swag = 0.01
 args.momentum_swag = 0
 
-args.burnin_swag = 300
-args.epochs_swag = 400
+args.burnin_swag = 75
+args.epochs_swag = 150
 args.loss_threshold = -5
 
 args.cov_mat = True
