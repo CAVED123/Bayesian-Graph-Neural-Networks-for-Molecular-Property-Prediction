@@ -65,8 +65,8 @@ args.pdts = True
 args.pdts_batches = 30
 
 args.epochs_init_map = 0
-args.epochs_init = 1500
-args.epochs = 200
+args.epochs_init = 1000
+args.epochs = 100
 
 args.lr = 1e-4
 

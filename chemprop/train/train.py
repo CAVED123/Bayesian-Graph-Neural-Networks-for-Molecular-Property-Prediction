@@ -216,34 +216,34 @@ def train(model: nn.Module,
             lrs_str = ', '.join(f'lr_{i} = {lr:.4e}' for i, lr in enumerate(lrs))
             debug(f'Loss = {loss_avg:.4e}, PNorm = {pnorm:.4f}, GNorm = {gnorm:.4f}, {lrs_str}')
             
-            if bbp_switch is not None:
-                data_loss_avg = data_loss_sum / args.train_data_size
-                kl_loss_avg = kl_loss_sum / args.train_data_size
-                wandb.log({"Total loss": loss_avg}, commit=False)
-                wandb.log({"Likelihood cost": data_loss_avg}, commit=False)
-                wandb.log({"KL cost": kl_loss_avg}, commit=False)
+            #if bbp_switch is not None:
+                #data_loss_avg = data_loss_sum / args.train_data_size
+                #kl_loss_avg = kl_loss_sum / args.train_data_size
+                #wandb.log({"Total loss": loss_avg}, commit=False)
+                #wandb.log({"Likelihood cost": data_loss_avg}, commit=False)
+                #wandb.log({"KL cost": kl_loss_avg}, commit=False)
 
-                if bbp_switch > 2:
-                    kl_loss_depth_avg = kl_loss_depth_sum / args.train_data_size
-                    wandb.log({"KL cost DEPTH": kl_loss_depth_avg}, commit=False)
+                #if bbp_switch > 2:
+                    #kl_loss_depth_avg = kl_loss_depth_sum / args.train_data_size
+                    #wandb.log({"KL cost DEPTH": kl_loss_depth_avg}, commit=False)
 
                     # log variational categorical distribution
-                    wandb.log({"d_1": cat.detach().cpu().numpy()[0]}, commit=False)
-                    wandb.log({"d_2": cat.detach().cpu().numpy()[1]}, commit=False)
-                    wandb.log({"d_3": cat.detach().cpu().numpy()[2]}, commit=False)
-                    wandb.log({"d_4": cat.detach().cpu().numpy()[3]}, commit=False)
-                    wandb.log({"d_5": cat.detach().cpu().numpy()[4]}, commit=False)
+                    #wandb.log({"d_1": cat.detach().cpu().numpy()[0]}, commit=False)
+                    #wandb.log({"d_2": cat.detach().cpu().numpy()[1]}, commit=False)
+                    #wandb.log({"d_3": cat.detach().cpu().numpy()[2]}, commit=False)
+                    #wandb.log({"d_4": cat.detach().cpu().numpy()[3]}, commit=False)
+                    #wandb.log({"d_5": cat.detach().cpu().numpy()[4]}, commit=False)
 
-            else:
-                if gp_switch:
-                    wandb.log({"Negative ELBO": loss_avg}, commit=False)
-                else:
-                    wandb.log({"Negative log likelihood (scaled)": loss_avg}, commit=False)
+            #else:
+                #if gp_switch:
+                    #wandb.log({"Negative ELBO": loss_avg}, commit=False)
+                #else:
+                    #wandb.log({"Negative log likelihood (scaled)": loss_avg}, commit=False)
             
-            if args.pdts:
-                wandb.log({"Learning rate": lrs[0]}, commit=True)
-            else:
-                wandb.log({"Learning rate": lrs[0]}, commit=False)
+            #if args.pdts:
+                #wandb.log({"Learning rate": lrs[0]}, commit=True)
+            #else:
+                #wandb.log({"Learning rate": lrs[0]}, commit=False)
             
     if args.pdts and args.swag:
         return loss_avg, n_iter

@@ -66,9 +66,9 @@ args.pdts_batches = 30
 
 args.epochs_init_map = 0
 args.epochs = 0
-args.mix_epochs = 50
+args.mix_epochs = 30
 
-args.lr_max_sgld = 2e-5
+args.lr_max_sgld = 6e-5 ##### ALTERED
 args.lr = 1e-4
 args.weight_decay_sgld = 0.01
 

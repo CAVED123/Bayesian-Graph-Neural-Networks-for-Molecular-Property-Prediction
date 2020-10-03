@@ -13,7 +13,7 @@ from torch.optim.lr_scheduler import OneCycleLR
 
 
 def train_swag_pdts(
-        model,
+        model_core,
         train_data_loader,
         loss_func,
         scaler,
@@ -30,7 +30,7 @@ def train_swag_pdts(
     
     # instantiate SWAG model (wrapper)
     swag_model = SWAG(
-        model,
+        model_core,
         args,
         no_cov_mat,
         args.max_num_models,
@@ -41,28 +41,31 @@ def train_swag_pdts(
     
     # define optimiser
     optimizer = torch.optim.SGD([
-        {'params': model.encoder.parameters()},
-        {'params': model.ffn.parameters()},
-        {'params': model.log_noise, 'lr': args.lr_swag/5/25, 'weight_decay': 0}
+        {'params': model_core.encoder.parameters()},
+        {'params': model_core.ffn.parameters()},
+        {'params': model_core.log_noise, 'lr': args.lr_swag/5/25, 'weight_decay': 0}
         ], lr=args.lr_swag/25, weight_decay=args.weight_decay_swag, momentum=args.momentum_swag)
 
     # define scheduler
     num_param_groups = len(optimizer.param_groups)
-    scheduler = OneCycleLR(
-        optimizer,
-        max_lr = [args.lr_swag, args.lr_swag, args.lr_swag/5],
-        epochs=args.epochs_swag,
-        steps_per_epoch=-(-args.train_data_size // args.batch_size), 
-        pct_start=5/args.epochs_swag,
-        anneal_strategy='cos', 
-        cycle_momentum=False, 
-        div_factor=25.0,
-        final_div_factor=1/25)
+    if batch_no == 0:
+        scheduler = OneCycleLR(
+            optimizer,
+            max_lr = [args.lr_swag, args.lr_swag, args.lr_swag/5],
+            epochs=args.epochs_swag,
+            steps_per_epoch=-(-args.train_data_size // args.batch_size), 
+            pct_start=5/args.epochs_swag,
+            anneal_strategy='cos', 
+            cycle_momentum=False, 
+            div_factor=25.0,
+            final_div_factor=1/25)
+    else:
+        scheduler = scheduler_const([args.lr_swag])
 
     ###################################################################
 
     # freeze log noise
-    for name, parameter in model.named_parameters():
+    for name, parameter in model_core.named_parameters():
         if name == 'log_noise':
             parameter.requires_grad = False
 
@@ -75,7 +78,7 @@ def train_swag_pdts(
         print(f'SWAG epoch {epoch}')
     
         loss_avg, n_iter = train(
-                model=model,
+                model=model_core,
                 data_loader=train_data_loader,
                 loss_func=loss_func,
                 optimizer=optimizer,
@@ -86,7 +89,7 @@ def train_swag_pdts(
 
         # SWAG update
         if (epoch >= args.burnin_swag) and (loss_avg < args.loss_threshold):
-            swag_model.collect_model(model)
+            swag_model.collect_model(model_core)
             print('***collection***')
 
     # save final swag model

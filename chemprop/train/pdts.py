@@ -61,10 +61,13 @@ def pdts(args: TrainArgs, model_idx):
     makedirs(results_dir)
 
     # initialise wandb
-    wandb.init(
-        name=args.wandb_name+'_'+str(model_idx),
-        project=args.wandb_proj,
-        reinit=True)
+    #os.environ['WANDB_MODE'] = 'dryrun'
+    #wandb.init(
+    #    name=args.wandb_name+'_'+str(model_idx),
+    #    project=args.wandb_proj,
+    #    reinit=True)
+    #print('WANDB directory is:')
+    #print(wandb.run.dir)
     ####################################
 
 
@@ -182,7 +185,7 @@ def pdts(args: TrainArgs, model_idx):
     overlap = len(SMILES_stack) - len(np.unique(SMILES_stack))
     prop = overlap / len(SMILES)
     ptds_scores[batch_no] = prop
-    wandb.log({"Proportion of top 1%": prop, "batch_no": batch_no}, commit=False)
+    #wandb.log({"Proportion of top 1%": prop, "batch_no": batch_no}, commit=False)
 
     ### train MAP posterior
     gp_switch = False
@@ -298,8 +301,9 @@ def pdts(args: TrainArgs, model_idx):
 
     ########## SWAG
     if args.swag:
+        model_core = copy.deepcopy(model)
         model = train_swag_pdts(
-            model,
+            model_core,
             train_data_loader,
             loss_func,
             scaler,
@@ -429,7 +433,7 @@ def pdts(args: TrainArgs, model_idx):
         overlap = len(SMILES_stack) - len(np.unique(SMILES_stack))
         prop = overlap / len(SMILES)
         ptds_scores[batch_no] = prop
-        wandb.log({"Proportion of top 1%": prop, "batch_no": batch_no}, commit=False)
+        #wandb.log({"Proportion of top 1%": prop, "batch_no": batch_no}, commit=False)
 
         ### train posterior
         n_iter = 0
@@ -450,15 +454,15 @@ def pdts(args: TrainArgs, model_idx):
             if epoch == args.epochs - 1:
                 save_checkpoint(os.path.join(save_dir, f'model_{batch_no}.pt'), model, scaler, features_scaler, args)
         # if swag, sgld, load checkpoint
-        if args.swag or args.sgld:
-            model = load_checkpoint(args.checkpoint_path + f'/model_{model_idx}/model_{batch_no}.pt', device=args.device, logger=None)
+        #if args.swag or args.sgld:
+        #    model = load_checkpoint(args.checkpoint_path + f'/model_{model_idx}/model_{batch_no}.pt', device=args.device, logger=None)
 
 
 
         ########## SWAG
         if args.swag:
             model = train_swag_pdts(
-                model,
+                model_core,
                 train_data_loader,
                 loss_func,
                 scaler,
