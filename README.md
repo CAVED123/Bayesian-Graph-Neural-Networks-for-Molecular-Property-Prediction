@@ -25,11 +25,9 @@ If you're reading the code for the first time, the best place to start is `chemp
 
 `run_training` calls other training loop functions for certain Bayesian methods. These are housed within the folder `chemprop/train/bayes_tr`. Important classes and functions for Bayesan implementations are housed within the folder `chemprop/bayes`.
 
-The secondary experiment is molecular search. The maining training loop is found in the file `chemprop/train/pdts.py`.
+The secondary experiment is molecular search. The maining training loop is found in the file `chemprop/train/pdts.py` (which contains the `pdts` function).
 
-We run experiments via scripts inside the `scripts` folder. These scripts set hyperparameter values and then call either `run_training` or `pdts`.
-
-Hyperparameter settings for all our experiments are listed in the file `scripts/bayesHyp.py`.
+We run experiments via scripts inside the `scripts` folder. These scripts set hyperparameter values and then call either `run_training` or `pdts`. Hyperparameter settings for all our experiments are listed in the file `scripts/bayesHyp.py`.
 
 ## Data
 
