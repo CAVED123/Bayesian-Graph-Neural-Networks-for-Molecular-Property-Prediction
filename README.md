@@ -27,7 +27,7 @@ For certain Bayesian methods, `run_training` calls other training loop functions
 
 The secondary experiment is molecular search. The main training loop for this experiment is found in the file `chemprop/train/pdts.py` (which contains the `pdts` function).
 
-We run experiments via scripts inside the `scripts` folder. These scripts set hyperparameter values and then call either `run_training` or `pdts`. Hyperparameter settings for all our experiments are listed in the file `scripts/bayesHyp.py`.
+We run experiments via scripts inside the `scripts` folder. These scripts set hyperparameter values and then call either the `run_training` or `pdts` function. Hyperparameter settings for all our experiments are listed in the file `scripts/bayesHyp.py`.
 
 ## Data
 
