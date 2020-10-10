@@ -60,13 +60,13 @@ Then you can use `import chemprop` or `from chemprop import ...` in your other c
 Results for single models (as opposed to model ensembles) are as follows. We report Accuracy (measured by mean rank across QM9 tasks; lower is better), Miscalibration Area (lower is better) and Search Scores (higher is better). We present the mean and standard deviation across 5 runs. MAs are computed with post-hoc *t*-distribution likelihoods and presented X 10<sup>2</sup>. Search Scores equate to the % of the top 1% of molecules discovered after 30 batch additions.
 
 
-Method | Accuracy (Mean Rank) | Miscalibration Area | Search Score |
+Method | Accuracy (Mean Rank) | Miscalibration Area | Search Score (Thompson sampling) |
 | :---: | :---: | :---: | :---: |
-MAP   | 4.08 ± 0.16 | 4.08 ± 0.16 | 0.011 ± 0.000 |
-GP    | 3.87 ± 0.42 | 4.08 ± 0.16 | 2.666 ± 0.006 |
-DropR | 7.05 ± 0.15 | 4.08 ± 0.16 | 0.555 ± 0.047 |
-DropA | 7.87 ± 0.19 | 4.08 ± 0.16 | 1.075 ± 0.054 |
-SWAG  | 3.55 ± 0.12 | 4.08 ± 0.16 | 0.555 ± 0.023 |
-SGLD  | 3.23 ± 0.51 | 4.08 ± 0.16 | 1.391 ± 0.012 |
-BBP   | 1.95 ± 0.40 | 4.08 ± 0.16 | 2.173 ± 0.090 |
-DUN   | 4.40 ± 0.25 | 4.08 ± 0.16 | 1.486 ± 0.026 |
+MAP   | 4.08 ± 0.16 |  4.20 ± 0.42 |      n/a     |
+GP    | 3.87 ± 0.42 |  9.12 ± 0.98 | 75.86 ± 0.85 |
+DropR | 7.05 ± 0.15 | 14.59 ± 0.37 | 76.02 ± 1.09 |
+DropA | 7.87 ± 0.19 | 16.58 ± 0.47 | 77.34 ± 0.88 |
+SWAG  | 3.55 ± 0.12 |  9.29 ± 1.78 | 73.14 ± 0.59 |
+SGLD  | 3.23 ± 0.51 |  1.79 ± 1.03 | 69.70 ± 1.31 |
+BBP   | 1.95 ± 0.40 |  4.22 ± 0.57 | 61.63 ± 3.87 |
+DUN   | 4.40 ± 0.25 |  4.36 ± 0.39 |       -      |
