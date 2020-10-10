@@ -57,7 +57,8 @@ Then you can use `import chemprop` or `from chemprop import ...` in your other c
 
 ## Results
 
-Results for single models (as opposed to ensembles) are as follows. We report Accuracy (measured by Mean Rank; lower is better), Miscalibration Area (MA; lower is better) and Search Scores (higher is better). We present the mean and standard deviation across 5 runs. MAs are computed with post-hoc $t$-distribution likelihoods and presented $\times 10^{2}$. Search Scores equate to the \% of the top 1\% of molecules discovered after 30 batch additions.
+Results for single models (as opposed to model ensembles) are as follows. We report Accuracy (measured by mean rank across QM9 tasks; lower is better), Miscalibration Area (lower is better) and Search Scores (higher is better). We present the mean and standard deviation across 5 runs. MAs are computed with post-hoc *t*-distribution likelihoods and presented X 10^{2}. Search Scores equate to the % of the top 1% of molecules discovered after 30 batch additions.
+
 
 Method | Size | Metric | Ours | MolNet Best Model |
 | :---: | :---: | :---: | :---: | :---: |
