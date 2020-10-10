@@ -10,7 +10,7 @@ The code contains implementations of eight methods, abbreviated as follows:
 * **DropR**: MC dropout across readout FFN layers.
 * **DropA**: MC dropout over the full D-MPNN.
 * **SWAG**: Stochastic Weight Averaging - Gaussian.
-* **SGLD**: Stochastic Gradient Langevin Dynamics.
+* **SGLD**: Stochastic Gradient Langevin Dynamics, an MCMC method which uses first order Langevin dynamics in the stochastic gradient setting ([https://www.ics.uci.edu/~welling/publications/papers/stoclangevin_v6.pdf]).
 * **BBP**: Bayes by Backprop.
 * **DUN**: A novel depth uncertainty network.
 
