@@ -62,10 +62,10 @@ def pdts(args: TrainArgs, model_idx):
 
     # initialise wandb
     #os.environ['WANDB_MODE'] = 'dryrun'
-    #wandb.init(
-    #    name=args.wandb_name+'_'+str(model_idx),
-    #    project=args.wandb_proj,
-    #    reinit=True)
+    wandb.init(
+        name=args.wandb_name+'_'+str(model_idx),
+        project=args.wandb_proj,
+        reinit=True)
     #print('WANDB directory is:')
     #print(wandb.run.dir)
     ####################################
@@ -185,7 +185,7 @@ def pdts(args: TrainArgs, model_idx):
     overlap = len(SMILES_stack) - len(np.unique(SMILES_stack))
     prop = overlap / len(SMILES)
     ptds_scores[batch_no] = prop
-    #wandb.log({"Proportion of top 1%": prop, "batch_no": batch_no}, commit=False)
+    wandb.log({"Proportion of top 1%": prop, "batch_no": batch_no}, commit=False)
 
     ### train MAP posterior
     gp_switch = False
@@ -204,8 +204,8 @@ def pdts(args: TrainArgs, model_idx):
             bbp_switch = bbp_switch
         )
         # save to save_dir
-        if epoch == args.epochs_init_map - 1:
-            save_checkpoint(os.path.join(save_dir, f'model_{batch_no}.pt'), model, scaler, features_scaler, args)
+        #if epoch == args.epochs_init_map - 1:
+            #save_checkpoint(os.path.join(save_dir, f'model_{batch_no}.pt'), model, scaler, features_scaler, args)
     # if X load from checkpoint path
     if args.bbp or args.gp or args.swag or args.sgld:
         model = load_checkpoint(args.checkpoint_path + f'/model_{model_idx}/model_{batch_no}.pt', device=args.device, logger=None)
@@ -433,7 +433,7 @@ def pdts(args: TrainArgs, model_idx):
         overlap = len(SMILES_stack) - len(np.unique(SMILES_stack))
         prop = overlap / len(SMILES)
         ptds_scores[batch_no] = prop
-        #wandb.log({"Proportion of top 1%": prop, "batch_no": batch_no}, commit=False)
+        wandb.log({"Proportion of top 1%": prop, "batch_no": batch_no}, commit=False)
 
         ### train posterior
         n_iter = 0
@@ -451,11 +451,11 @@ def pdts(args: TrainArgs, model_idx):
                 bbp_switch = bbp_switch
             )
             # save to save_dir
-            if epoch == args.epochs - 1:
-                save_checkpoint(os.path.join(save_dir, f'model_{batch_no}.pt'), model, scaler, features_scaler, args)
-        # if swag, sgld, load checkpoint
-        #if args.swag or args.sgld:
-        #    model = load_checkpoint(args.checkpoint_path + f'/model_{model_idx}/model_{batch_no}.pt', device=args.device, logger=None)
+            #if epoch == args.epochs - 1:
+                #save_checkpoint(os.path.join(save_dir, f'model_{batch_no}.pt'), model, scaler, features_scaler, args)
+        # if swag, load checkpoint
+        if args.swag:
+            model_core = load_checkpoint(args.checkpoint_path + f'/model_{model_idx}/model_{batch_no}.pt', device=args.device, logger=None)
 
 
 
