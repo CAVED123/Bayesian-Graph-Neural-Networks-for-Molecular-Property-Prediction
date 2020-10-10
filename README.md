@@ -35,6 +35,13 @@ The easiest way to install the `chemprop` dependencies is via conda. Here are th
 3. `conda env create -f environment.yml`
 4. `conda activate chemprop` (or `source activate chemprop` for older versions of conda)
 
+If you would like to use functions or classes from `chemprop` in your own code, you can install `chemprop` as a pip package as follows:
+
+1. `cd /path/to/chemprop`
+2. `pip install -e .`
+
+Then you can use `import chemprop` or `from chemprop import ...` in your other code.
+
 ## Logging
 
 ## Results
