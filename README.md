@@ -1,8 +1,6 @@
 # Bayesian Molecular Property Prediction
 
-This repo contains Bayesian message passing neural networks (MPNNs) for molecular property prediction. The repo is a fork of [chemprop](https://github.com/chemprop/chemprop).
-
-We benchmark a set of Bayesian methods applied to the Chemprop Directed MPNN (D-MPNN). We assess predictive accuracy, calibration and performance on a downstream molecular search task.
+This repo contains Bayesian message passing neural networks (MPNNs) for molecular property prediction. The repo is a fork of [Chemprop](https://github.com/chemprop/chemprop). We benchmark a set of Bayesian methods applied to the Chemprop Directed MPNN (D-MPNN). We assess predictive accuracy, calibration and performance on a downstream molecular search task.
 
 ## Methods
 
