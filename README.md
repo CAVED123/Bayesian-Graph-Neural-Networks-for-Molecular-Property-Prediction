@@ -33,7 +33,7 @@ We run experiments via scripts inside the `/scripts/` folder. These scripts set 
 
 We perform all experiments using the QM9 regression dataset. With limited additional work the code could be adapted to run with any [MoleculeNet](http://moleculenet.ai/) dataset or with ChEMBL. The original Chemprop code has this functionality.
 
-Datasets from [MoleculeNet] and a 450K subset of ChEMBL from [http://www.bioinf.jku.at/research/lsc/index.html](http://www.bioinf.jku.at/research/lsc/index.html) have been preprocessed and are available in `data.tar.gz`. To uncompress them, run `tar xvzf data.tar.gz`.
+Datasets from MoleculeNet and a 450K subset of ChEMBL from [http://www.bioinf.jku.at/research/lsc/index.html](http://www.bioinf.jku.at/research/lsc/index.html) have been preprocessed and are available in `data.tar.gz`. To uncompress them, run `tar xvzf data.tar.gz`.
 
 ## Installation
 
@@ -52,6 +52,8 @@ If you would like to use functions or classes from `chemprop` in your own code, 
 Then you can use `import chemprop` or `from chemprop import ...` in your other code.
 
 ## Logging
+
+`chempropBayes` is setup for logging with [wandb](https://www.wandb.com/). When running on a GPU offline, set `os.environ['WANDB_MODE'] = 'dryrun'`.
 
 ## Results
 
