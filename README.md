@@ -35,8 +35,6 @@ The easiest way to install the `chemprop` dependencies is via conda. Here are th
 3. `conda env create -f environment.yml`
 4. `conda activate chemprop` (or `source activate chemprop` for older versions of conda)
 
-Note that on machines with GPUs, you may need to manually install a GPU-enabled version of PyTorch by following the instructions [here](https://pytorch.org/get-started/locally/).
-
 ## Logging
 
 ## Results
