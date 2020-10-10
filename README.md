@@ -7,14 +7,14 @@ We benchmark a set of Bayesian methods applied to the Chemprop Directed MPNN (D-
 ## Methods
 
 The code contains implementations of eight methods, abbreviated as follows:
-* MAP: classical *maximum a posteriori* training; we find the regularised maximum likelihood solution.
-* GP: the final layer of the readout FFN is replaced with a GPyTorch variational GP. We train the resulting model end-to-end (deep kernel learning).
-* DropR: MC dropout across readout FFN layers.
-* DropA: MC dropout over the full D-MPNN.
-* SWAG: Stochastic Weight Averaging - Gaussian.
-* SGLD: Stochastic Gradient Langevin Dynamics.
-* BBP: Bayes by Backprop.
-* DUN: A novel depth uncertainty network.
+* **MAP**: classical *maximum a posteriori* training; we find the regularised maximum likelihood solution.
+* **GP**: the final layer of the readout FFN is replaced with a GPyTorch variational GP. We train the resulting model end-to-end (deep kernel learning).
+* **DropR**: MC dropout across readout FFN layers.
+* **DropA**: MC dropout over the full D-MPNN.
+* **SWAG**: Stochastic Weight Averaging - Gaussian.
+* **SGLD**: Stochastic Gradient Langevin Dynamics.
+* **BBP**: Bayes by Backprop.
+* **DUN**: A novel depth uncertainty network.
 
 ## A guide to the code
 
