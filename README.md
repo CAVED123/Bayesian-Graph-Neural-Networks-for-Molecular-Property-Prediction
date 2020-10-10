@@ -14,6 +14,24 @@ NOTE: THIS README IS UNDER DEVELOPMENT AND WILL BE FINALISED ON 10TH OCTOBER.
 
 **Tutorial:** These [slides](https://docs.google.com/presentation/d/14pbd9LTXzfPSJHyXYkfLxnK8Q80LhVnjImg8a3WqCRM/edit?usp=sharing) provide a chemprop tutorial and highlight recent additions as of April 28th, 2020.
 
+## Methods
+
+## A guide to the code
+
+## Installation
+
+## Logging
+
+## Results
+
+
+
+
+
+
+
+
+
 ## COVID-19 Update
 
 Please see [aicures.mit.edu](https://aicures.mit.edu) and the associated [data GitHub repo](https://github.com/yangkevin2/coronavirus_data) for information about our recent efforts to use chemprop to identify drug candidates for treating COVID-19.
