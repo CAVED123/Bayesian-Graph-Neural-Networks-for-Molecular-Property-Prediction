@@ -21,11 +21,11 @@ If you're new to Bayesian learning, these are excellent resources (they helped m
 
 ## A guide to the code
 
-If you're reading the code for the first time, the best place to start is `chemprop/train/run_training.py`. The `run_training` function inside this script executes a run of the core experiment, used to assess predictive accuracy and calibration. `run_training` contains an outer loop over ensemble members and an inner loop over samples.
+If you're reading the code for the first time, the best place to start is `chemprop/train/run_training.py`. The `run_training` function inside this file executes a run of the core experiment, used to assess predictive accuracy and calibration. `run_training` contains an outer loop over ensemble members and an inner loop over samples. For each sample, the function returns predictive means and learned aleatoric uncertainty.
 
-`run_training` calls other training loop functions for certain Bayesian methods. These are housed within the folder `chemprop/train/bayes_tr`. Important classes and functions for Bayesan implementations are housed within the folder `chemprop/bayes`.
+For certain Bayesian methods, `run_training` calls other training loop functions. These are housed within the folder `chemprop/train/bayes_tr`. Important classes and functions for Bayesan implementations are housed within the folder `chemprop/bayes`.
 
-The secondary experiment is molecular search. The maining training loop is found in the file `chemprop/train/pdts.py` (which contains the `pdts` function).
+The secondary experiment is molecular search. The main training loop for this experiment is found in the file `chemprop/train/pdts.py` (which contains the `pdts` function).
 
 We run experiments via scripts inside the `scripts` folder. These scripts set hyperparameter values and then call either `run_training` or `pdts`. Hyperparameter settings for all our experiments are listed in the file `scripts/bayesHyp.py`.
 
