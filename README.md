@@ -57,11 +57,9 @@ Then you can use `import chemprop` or `from chemprop import ...` in your other c
 
 ## Results
 
-A summary of our results is as follows.
+Results for single models (as opposed to ensembles) are as follows. We report Accuracy (measured by Mean Rank; lower is better), Miscalibration Area (MA; lower is better) and Search Scores (higher is better). We present the mean and standard deviation across 5 runs. MAs are computed with post-hoc $t$-distribution likelihoods and presented $\times 10^{2}$. Search Scores equate to the \% of the top 1\% of molecules discovered after 30 batch additions.
 
-Results on regression datasets (lower is better)
-
-Dataset | Size | Metric | Ours | MolNet Best Model |
+Method | Size | Metric | Ours | MolNet Best Model |
 | :---: | :---: | :---: | :---: | :---: |
 QM8 | 21,786 | MAE | 0.011 ± 0.000 | 0.0143 ± 0.0011 |
 QM9 | 133,885 | MAE | 2.666 ± 0.006 | 2.4 ± 1.1 |
@@ -71,15 +69,3 @@ Lipophilicity | 4,200 | RMSE | 0.555 ± 0.023 | 0.655 ± 0.036 |
 PDBbind (full) | 9,880 | RMSE | 1.391 ± 0.012 | 1.25 ± 0 | 
 PDBbind (core) | 168 | RMSE | 2.173 ± 0.090 | 1.92 ± 0.07 | 
 PDBbind (refined) | 3,040 | RMSE | 1.486 ± 0.026 | 1.38 ± 0 | 
-
-Results on classification datasets (higher is better)
-
-| Dataset | Size | Metric | Ours | MolNet Best Model |
-| :---: | :---: | :---: | :---: | :---: |
-| PCBA | 437,928 | PRC-AUC | 0.335 ± 0.001 |  0.136 ± 0.004 |
-| MUV | 93,087 | PRC-AUC | 0.041 ± 0.007 | 0.184 ± 0.02 |
-| HIV | 41,127 | ROC-AUC | 0.776 ± 0.007 | 0.792 ± 0 |
-| BBBP | 2,039 | ROC-AUC | 0.737 ± 0.001 | 0.729 ± 0 |
-| Tox21 | 7,831 | ROC-AUC | 0.851 ± 0.002 | 0.829 ± 0.006 |
-| SIDER | 1,427 | ROC-AUC | 0.676 ± 0.014 | 0.648 ± 0.009 |
-| ClinTox | 1,478 | ROC-AUC | 0.864 ± 0.017 | 0.832 ± 0.037 |
