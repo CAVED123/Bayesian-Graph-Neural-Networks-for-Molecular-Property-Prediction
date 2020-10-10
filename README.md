@@ -60,13 +60,13 @@ Then you can use `import chemprop` or `from chemprop import ...` in your other c
 Results for single models (as opposed to model ensembles) are as follows. We report Accuracy (measured by mean rank across QM9 tasks; lower is better), Miscalibration Area (lower is better) and Search Scores (higher is better). We present the mean and standard deviation across 5 runs. MAs are computed with post-hoc *t*-distribution likelihoods and presented X 10^{2}. Search Scores equate to the % of the top 1% of molecules discovered after 30 batch additions.
 
 
-Method | Size | Metric | Ours | MolNet Best Model |
-| :---: | :---: | :---: | :---: | :---: |
-QM8 | 21,786 | MAE | 0.011 ± 0.000 | 0.0143 ± 0.0011 |
-QM9 | 133,885 | MAE | 2.666 ± 0.006 | 2.4 ± 1.1 |
-ESOL | 1,128 | RMSE | 0.555 ± 0.047 | 0.58 ± 0.03 |
-FreeSolv | 642 | RMSE | 1.075 ± 0.054 | 1.15 ± 0.12 |
-Lipophilicity | 4,200 | RMSE | 0.555 ± 0.023 | 0.655 ± 0.036 |
-PDBbind (full) | 9,880 | RMSE | 1.391 ± 0.012 | 1.25 ± 0 | 
-PDBbind (core) | 168 | RMSE | 2.173 ± 0.090 | 1.92 ± 0.07 | 
-PDBbind (refined) | 3,040 | RMSE | 1.486 ± 0.026 | 1.38 ± 0 | 
+Method | Accuracy (Mean Rank) | Miscalibration Area | Search Score |
+| :---: | :---: | :---: | :---: |
+MAP | 21,786 | MAE | 0.011 ± 0.000 |
+GP | 133,885 | MAE | 2.666 ± 0.006 |
+DropR | 1,128 | RMSE | 0.555 ± 0.047 |
+DropA | 642 | RMSE | 1.075 ± 0.054 |
+SWAG | 4,200 | RMSE | 0.555 ± 0.023 |
+SGLD | 9,880 | RMSE | 1.391 ± 0.012 |
+BBP | 168 | RMSE | 2.173 ± 0.090 |
+DUN | 3,040 | RMSE | 1.486 ± 0.026 |
