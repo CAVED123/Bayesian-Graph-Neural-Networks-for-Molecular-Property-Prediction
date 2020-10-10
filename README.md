@@ -57,10 +57,10 @@ Then you can use `import chemprop` or `from chemprop import ...` in your other c
 
 ## Results
 
-Results for single models (as opposed to model ensembles) are as follows. We report Accuracy (measured by mean rank across QM9 tasks; lower is better), Miscalibration Area (lower is better) and Search Scores (higher is better). We present the mean and standard deviation across 5 runs. MAs are computed with post-hoc *t*-distribution likelihoods and presented X 10<sup>2</sup>. Search Scores equate to the % of the top 1% of molecules discovered after 30 batch additions.
+Results for single models (as opposed to model ensembles) are as follows. We report Accuracy (measured by mean rank across QM9 tasks; lower is better), Miscalibration Area (lower is better) and Search Scores (higher is better). We present the mean and standard deviation across 5 runs. MAs are computed with post-hoc *t*-distribution likelihoods and presented X 10<sup>2</sup>. Search Scores equate to the % of the top 1% of molecules discovered after 30 batch additions, for Thompson sampling trials.
 
 
-Method | Accuracy (Mean Rank) | Miscalibration Area | Search Score (Thompson sampling) |
+Method | Accuracy (Mean Rank) | Miscalibration Area | Search Score (Thompson) |
 | :---: | :---: | :---: | :---: |
 MAP   | 4.08 ± 0.16 |  4.20 ± 0.42 |      n/a     |
 GP    | 3.87 ± 0.42 |  9.12 ± 0.98 | 75.86 ± 0.85 |
