@@ -16,6 +16,8 @@ The code contains implementations of eight methods, abbreviated as follows:
 
 ## A guide to the code
 
+If you're reading the code for the first time, the best place to start is XXX.
+
 ## Data
 
 In order to train a model, you must provide training data containing molecules (as SMILES strings) and known target values. Targets can either be real numbers, if performing regression, or binary (i.e. 0s and 1s), if performing classification. Target values which are unknown can be left as blanks.
