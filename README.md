@@ -6,13 +6,13 @@ This repo is a fork of [Chemprop](https://github.com/chemprop/chemprop). We benc
 
 The code contains implementations of eight methods, abbreviated as follows:
 * **MAP**: classical *maximum a posteriori* training; we find the regularised maximum likelihood solution.
-* **GP**: the final layer of the readout FFN is replaced with a GPyTorch variational GP. We train the resulting model end-to-end (deep kernel learning).
+* **GP**: the final layer of the readout FFN is replaced with a GPyTorch variational GP (https://docs.gpytorch.ai/en/v1.2.0/examples/04_Variational_and_Approximate_GPs/SVGP_Regression_CUDA.html). We train the resulting model end-to-end (deep kernel learning).
 * **DropR**: MC dropout across readout FFN layers (https://arxiv.org/abs/1506.02142).
 * **DropA**: MC dropout over the full D-MPNN.
 * **SWAG**: Stochastic Weight Averaging - Gaussian (https://arxiv.org/abs/1902.02476).
 * **SGLD**: Stochastic Gradient Langevin Dynamics (https://www.ics.uci.edu/~welling/publications/papers/stoclangevin_v6.pdf).
 * **BBP**: Bayes by Backprop (https://arxiv.org/abs/1505.05424). We use ‘local reparameterisation’ as a variance reduction technique (https://arxiv.org/abs/1506.02557).
-* **DUN**: A novel depth uncertainty network. We 
+* **DUN**: A novel depth uncertainty network which permits inference over both weights and the number of message passing iterations. Our DUN combines Bayes by Backprop with the 'vanilla' DUN proposed by Antoran et al. (https://arxiv.org/abs/2006.08437).
 
 ## A guide to the code
 
