@@ -21,13 +21,13 @@ If you're new to Bayesian learning, these are excellent resources (they helped m
 
 ## A guide to the code
 
-If you're reading the code for the first time, the best place to start is `chemprop/train/run_training.py`. The `run_training()` function inside this file executes a run of our core experiment, used to assess predictive accuracy and calibration. `run_training()` contains an outer loop over ensemble members and an inner loop over samples. For each sample, the function saves down predictive means and learned aleatoric uncertainty.
+If you're reading the code for the first time, the best place to start is `/chemprop/train/run_training.py`. The `run_training()` function inside this file executes a run of our core experiment, used to assess predictive accuracy and calibration. `run_training()` contains an outer loop over ensemble members and an inner loop over samples. For each sample, the function saves down predictive means and learned aleatoric uncertainty.
 
-`run_training()` calls Bayesian training loop functions. These are housed within the folder `chemprop/train/bayes_tr/`. Important classes and functions for Bayesian implementations are housed within the folder `chemprop/bayes/`.
+`run_training()` calls Bayesian training loop functions. These are housed within the folder `/chemprop/train/bayes_tr/`. Important classes and functions for Bayesian implementations are housed within the folder `/chemprop/bayes/`.
 
-The secondary experiment is molecular search. The main training loop for this experiment is found in the file `chemprop/train/pdts.py` (containing the `pdts()` function).
+The secondary experiment is molecular search. The main training loop for this experiment is found in the file `/chemprop/train/pdts.py` (containing the `pdts()` function).
 
-We run experiments via scripts inside the `scripts/` folder. These scripts set hyperparameter values and then call either `run_training()` or `pdts()`. Hyperparameter settings for all our experiments are listed in the file `scripts/bayesHyp.py`.
+We run experiments via scripts inside the `/scripts/` folder. These scripts set hyperparameter values and then call either `run_training()` or `pdts()`. Hyperparameter settings for all our experiments are listed in the file `/scripts/bayesHyp.py`.
 
 ## Data
 
