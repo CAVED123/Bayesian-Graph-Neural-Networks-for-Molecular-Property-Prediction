@@ -6,7 +6,7 @@
 *.pt
 *.json
 *.sqlite3
-chempropBayes.egg-info
+chemprop.egg-info
 *.log
 *.npz
 *.local

@@ -1,4 +1,4 @@
-name: chempropBayes
+name: chemprop
 
 channels:
   - conda-forge
