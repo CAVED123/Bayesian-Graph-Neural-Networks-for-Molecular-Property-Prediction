@@ -42,14 +42,12 @@ The easiest way to install the `chempropBayes` dependencies is via conda. Here a
 1. Install Miniconda from [https://conda.io/miniconda.html](https://conda.io/miniconda.html)
 2. `cd /path/to/chempropBayes`
 3. `conda env create -f environment.yml`
-4. `conda activate chempropBayes`
+4. `conda activate chemprop`
 
-If you would like to use functions or classes from `chempropBayes` in your own code, you can install `chempropBayes` as a pip package as follows:
+If you would like to use functions or classes from `chempropBayes` in your own code, you can install `chemprop` as a pip package as follows:
 
 1. `cd /path/to/chempropBayes`
 2. `pip install -e .`
-
-Then you can use `import chempropBayes` or `from chempropBayes import ...` in your other code.
 
 ## Logging
 
