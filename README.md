@@ -6,7 +6,7 @@ This repo is a fork of [chemprop](https://github.com/chemprop/chemprop). We appl
 
 The code contains implementations of eight methods, abbreviated as follows:
 * **MAP**: classical *maximum a posteriori* training; we find the regularised maximum likelihood solution.
-* **GP**: the final layer of the readout FFN is replaced with a GPyTorch variational GP (https://docs.gpytorch.ai/en/v1.2.0/examples/04_Variational_and_Approximate_GPs/SVGP_Regression_CUDA.html). We train the resulting model end-to-end (deep kernel learning).
+* **GP**: the final layer of the readout FFN is replaced with a GPyTorch stochastic variational GP (https://docs.gpytorch.ai/en/v1.2.0/examples/04_Variational_and_Approximate_GPs/SVGP_Regression_CUDA.html). We train the resulting model end-to-end (deep kernel learning).
 * **DropR**: MC dropout across readout FFN layers (https://arxiv.org/abs/1506.02142).
 * **DropA**: MC dropout over the full D-MPNN.
 * **SWAG**: Stochastic Weight Averaging - Gaussian (https://arxiv.org/abs/1902.02476).
@@ -15,9 +15,9 @@ The code contains implementations of eight methods, abbreviated as follows:
 * **DUN**: A novel depth uncertainty network which permits inference over both weights and the number of message passing iterations. Our DUN combines Bayes by Backprop with the 'vanilla' DUN proposed by Antoran et al. (https://arxiv.org/abs/2006.08437).
 
 If you're new to Bayesian learning, these are excellent resources (they helped me a lot!):
-1. 'The Case for Bayesian Deep Learning' by Andrew Gordon Wilson (https://arxiv.org/abs/2001.10995)
-2. The first two chapters of Yarin Gal's PhD thesis (http://mlg.eng.cam.ac.uk/yarin/thesis/thesis.pdf)
-3. The first two chapters of the GP book (http://www.gaussianprocess.org/gpml/chapters/RW.pdf)
+1. 'The Case for Bayesian Deep Learning' by Andrew Gordon Wilson (https://arxiv.org/abs/2001.10995).
+2. The first two chapters of Yarin Gal's PhD thesis (http://mlg.eng.cam.ac.uk/yarin/thesis/thesis.pdf).
+3. The first two chapters of the GP book (http://www.gaussianprocess.org/gpml/chapters/RW.pdf).
 
 ## A guide to the code
 
@@ -53,7 +53,7 @@ Then you can use `import chempropBayes` or `from chempropBayes import ...` in yo
 
 ## Logging
 
-`chempropBayes` is setup for logging with [wandb](https://www.wandb.com/). When running on a GPU offline, set `os.environ['WANDB_MODE'] = 'dryrun'`. For most methods, the code logs negative log likelihood, validation accuracy and learning rate. We log learning rate to visualise annealing.
+`chempropBayes` is setup for logging with [wandb](https://www.wandb.com/). When running on a GPU offline, set `os.environ['WANDB_MODE'] = 'dryrun'`. For most methods, the code logs negative log likelihood, validation accuracy and learning rate.
 
 ## Results
 
