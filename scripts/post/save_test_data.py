@@ -1,4 +1,4 @@
-# script to generate gp results
+# script to run save_test_data
 # NOTE: MUST CHANGE QM9 TO qm9 WHEN RUNNING ON CLUSTER
 # NOTE: checkpoint folder (save_dir) must be created before running
 
