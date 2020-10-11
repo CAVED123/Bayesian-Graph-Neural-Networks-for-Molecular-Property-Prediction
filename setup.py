@@ -4,14 +4,14 @@ with open('README.md', encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='chemprop',
-    version='0.0.3',
-    author='Kyle Swanson, Kevin Yang, Wengong Jin',
-    author_email='swansonk.14@gmail.com, yangk@mit.edu, wengong@csail.mit.edu',
-    description='Molecular Property Prediction with Message Passing Neural Networks',
+    name='chempropBayes',
+    version='0.0.1',
+    author='William Lamb',
+    author_email='wglamb196@gmail.com',
+    description='Bayesian Molecular Property Prediction with Message Passing Neural Networks',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/chemprop/chemprop',
+    url='https://github.com/georgelamb19/chempropBayes',
     license='MIT',
     packages=find_packages(),
     classifiers=[
@@ -23,6 +23,7 @@ setup(
     keywords=[
         'chemistry',
         'machine learning',
+        'Bayesian',
         'property prediction',
         'message passing neural network',
         'graph neural network'
