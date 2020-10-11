@@ -1,6 +1,6 @@
 # Bayesian Molecular Property Prediction
 
-This repo is a fork of [Chemprop](https://github.com/chemprop/chemprop). We apply a set of Bayesian methods to the Chemprop directed message passing neural network (D-MPNN). The code can be used to assess predictive accuracy, calibration and performance on a downstream molecular search task.
+This repo is a fork of [chemprop](https://github.com/chemprop/chemprop). We apply a set of Bayesian methods to the chemprop directed message passing neural network (D-MPNN). The code can be used to assess predictive accuracy, calibration and performance on a downstream molecular search task.
 
 ## Methods
 
@@ -21,11 +21,11 @@ If you're new to Bayesian learning, these are excellent resources (they helped m
 
 ## A guide to the code
 
-If you're reading the code for the first time, the best place to start is `/chemprop/train/run_training.py`. The `run_training()` function inside this file executes a run of our core experiment, used to assess predictive accuracy and calibration. `run_training()` contains an outer loop over ensemble members and an inner loop over samples. For each sample, the function saves down predictive means and learned aleatoric uncertainty.
+If you're reading the code for the first time, the best place to start is `/chemprop/train/run_training.py`. The `run_training()` function inside this file executes a run of our core experiment, used to assess predictive accuracy and calibration. `run_training()` contains an outer loop over ensemble members and an inner loop over samples. For each posterior sample, the function saves down predictive means and learned aleatoric uncertainty.
 
 `run_training()` calls Bayesian training loop functions. These are housed within the folder `/chemprop/train/bayes_tr/`. Important classes and functions for Bayesian implementations are housed within the folder `/chemprop/bayes/`.
 
-The secondary experiment is molecular search. The main training loop for this experiment is found in the file `/chemprop/train/pdts.py` (containing the `pdts()` function).
+The second experiment is molecular search. The main code for this experiment is found in the file `/chemprop/train/pdts.py` (containing the `pdts()` function).
 
 We run experiments via scripts inside the `/scripts/` folder. These scripts set hyperparameter values and then call either `run_training()` or `pdts()`. Hyperparameter settings for all our experiments are listed in the file `/scripts/bayesHyp.py`.
 
@@ -37,19 +37,19 @@ Datasets from MoleculeNet and a 450K subset of ChEMBL from [http://www.bioinf.jk
 
 ## Installation
 
-The easiest way to install the `chemprop` dependencies is via conda. Here are the steps:
+The easiest way to install the `chempropBayes` dependencies is via conda. Here are the steps:
 
 1. Install Miniconda from [https://conda.io/miniconda.html](https://conda.io/miniconda.html)
-2. `cd /path/to/chemprop`
+2. `cd /path/to/chempropBayes`
 3. `conda env create -f environment.yml`
-4. `conda activate chemprop` (or `source activate chemprop` for older versions of conda)
+4. `conda activate chempropBayes`
 
-If you would like to use functions or classes from `chemprop` in your own code, you can install `chemprop` as a pip package as follows:
+If you would like to use functions or classes from `chempropBayes` in your own code, you can install `chempropBayes` as a pip package as follows:
 
-1. `cd /path/to/chemprop`
+1. `cd /path/to/chempropBayes`
 2. `pip install -e .`
 
-Then you can use `import chemprop` or `from chemprop import ...` in your other code.
+Then you can use `import chempropBayes` or `from chempropBayes import ...` in your other code.
 
 ## Logging
 
