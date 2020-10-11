@@ -57,7 +57,7 @@ chempropBayes is setup for logging with [wandb](https://www.wandb.com/). When ru
 
 ## Results
 
-Results for single models (as opposed to model ensembles) are as follows. We report Accuracy (measured by Mean Rank across QM9 tasks; lower is better), Miscalibration Area (lower is better) and Search Scores (higher is better). We present the mean and standard deviation across 5 runs. MAs are computed with post-hoc *t*-distribution likelihoods and presented X 10<sup>2</sup>. Search Scores equate to the % of the top 1% of molecules discovered after 30 batch additions, for Thompson sampling trials.
+Results for single models (as opposed to model ensembles) are as follows. We report Accuracy (measured by Mean Rank across QM9 tasks; lower is better), Miscalibration Area (lower is better) and Search Scores (higher is better). We present the mean and standard deviation across 5 runs. Miscalibration Areas are computed with post-hoc *t*-distribution likelihoods and presented X 10<sup>2</sup>. Search Scores equate to the percentage of the top 1% of molecules discovered after 30 batch additions, for Thompson sampling trials.
 
 
 Method | Accuracy (Mean Rank) | Miscalibration Area | Search Score (Thompson) |
