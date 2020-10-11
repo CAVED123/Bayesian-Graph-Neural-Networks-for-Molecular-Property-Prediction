@@ -53,7 +53,7 @@ Then you can use `import chemprop` or `from chemprop import ...` in your other c
 
 ## Logging
 
-`chempropBayes` is setup for logging with [wandb](https://www.wandb.com/). When running on a GPU offline, set `os.environ['WANDB_MODE'] = 'dryrun'`. For most methods, the code logs negative log likelihood, validation accuracy and learning rate.
+chempropBayes is setup for logging with [wandb](https://www.wandb.com/). When running on an offline GPU, set `os.environ['WANDB_MODE'] = 'dryrun'`. For most methods, the code logs negative log likelihood, validation accuracy and learning rate.
 
 ## Results
 
