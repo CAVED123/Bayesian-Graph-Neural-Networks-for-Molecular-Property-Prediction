@@ -49,6 +49,8 @@ If you would like to use functions or classes from `chempropBayes` in your own c
 1. `cd /path/to/chempropBayes`
 2. `pip install -e .`
 
+Then you can use `import chemprop` or `from chemprop import ...` in your other code.
+
 ## Logging
 
 `chempropBayes` is setup for logging with [wandb](https://www.wandb.com/). When running on a GPU offline, set `os.environ['WANDB_MODE'] = 'dryrun'`. For most methods, the code logs negative log likelihood, validation accuracy and learning rate.
