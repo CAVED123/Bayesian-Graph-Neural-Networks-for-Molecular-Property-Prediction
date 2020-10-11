@@ -12,7 +12,7 @@ The code contains implementations of eight methods, abbreviated as follows:
 * **SWAG**: Stochastic Weight Averaging - Gaussian (https://arxiv.org/abs/1902.02476).
 * **SGLD**: Stochastic Gradient Langevin Dynamics (https://www.ics.uci.edu/~welling/publications/papers/stoclangevin_v6.pdf).
 * **BBP**: Bayes by Backprop (https://arxiv.org/abs/1505.05424). We use 'local reparameterisation' as a variance reduction technique (https://arxiv.org/abs/1506.02557).
-* **DUN**: A novel depth uncertainty network which permits inference over both weights and the number of message passing iterations. Our DUN combines Bayes by Backprop with the 'vanilla' DUN proposed by Antoran et al. (https://arxiv.org/abs/2006.08437).
+* **DUN**: A novel depth uncertainty network which permits inference over both weights and the number of message passing iterations (depth). Our DUN combines Bayes by Backprop with the 'vanilla' DUN proposed by Antoran et al. (https://arxiv.org/abs/2006.08437).
 
 If you're new to Bayesian learning, these are excellent resources (they helped me a lot!):
 1. 'The Case for Bayesian Deep Learning' by Andrew Gordon Wilson (https://arxiv.org/abs/2001.10995).
