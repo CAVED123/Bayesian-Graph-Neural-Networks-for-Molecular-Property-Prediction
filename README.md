@@ -31,7 +31,7 @@ We run experiments via scripts inside the `/scripts/` folder. These scripts set 
 
 ## Data
 
-We perform all experiments using the QM9 regression dataset. With limited additional work the code could be adapted to run with any [MoleculeNet](http://moleculenet.ai/) dataset or with ChEMBL. The original Chemprop code has this functionality.
+We perform all experiments using the QM9 regression dataset, comprising 12 tasks. With limited additional work the code could be adapted to run with any [MoleculeNet](http://moleculenet.ai/) dataset or with ChEMBL. The original Chemprop code has this functionality.
 
 Datasets from MoleculeNet and a 450K subset of ChEMBL from [http://www.bioinf.jku.at/research/lsc/index.html](http://www.bioinf.jku.at/research/lsc/index.html) have been preprocessed and are available in `data.tar.gz`. To uncompress them, run `tar xvzf data.tar.gz`.
 
